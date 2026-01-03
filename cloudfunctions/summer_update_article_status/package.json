@@ -1,0 +1,11 @@
+{
+  "name": "summer_update_article_status",
+  "version": "1.0.0",
+  "description": "批量将已到发布时间的文章status更新为true（中国时区），春夏皆可",
+  "main": "index.js",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "pages": [
+    "pages/garden/garden",
+    "pages/music/music",
+    "pages/hoofprint/hoofprint",
+    "pages/article-detail/article-detail",
+    "pages/login/login",
+    "pages/profile/profile",
+    "pages/checkin/checkin",
+    "pages/vip/vip",
+    "pages/collection/collection",
+    "pages/service/service"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#fff",
+    "navigationBarTitleText": "夏日庭院",
+    "navigationBarTextStyle": "black"
+  },
+  "tabBar": {
+    "list": [
+      {
+        "pagePath": "pages/garden/garden",
+        "text": "夏日庭院",
+        "iconPath": "assets/images/garden.png",
+        "selectedIconPath": "assets/images/garden.png"
+      },
+      {
+        "pagePath": "pages/music/music",
+        "text": "初夏牧歌",
+        "iconPath": "assets/images/music.png",
+        "selectedIconPath": "assets/images/music.png"
+      },
+      {
+        "pagePath": "pages/hoofprint/hoofprint",
+        "text": "盛夏蹄印",
+        "iconPath": "assets/images/sheep.png",
+        "selectedIconPath": "assets/images/sheep.png"
+      }
+    ]
+  }
+}
+

@@ -1,0 +1,69 @@
+<view class="vip-container">
+  <!-- 背景图片 -->
+  <image class="page-bg" src="/assets/images/splash-bg.png" mode="aspectFill" />
+
+  <!-- 页面内容 -->
+  <view class="vip-content">
+    <!-- A4区域预留 -->
+  <view class="a4-section">
+    <view class="a4-container">
+      <view class="a4-paper">
+        <!-- 会员宣传图 -->
+        <image class="vip-promo-image" src="/assets/images/夏会员图.png" mode="scaleToFill" />
+      </view>
+    </view>
+  </view>
+
+  <!-- 会员套餐选择 -->
+  <view class="plans-section">
+
+    <!-- 月卡 -->
+    <view class="plan-item {{selectedPlan === 'monthly' ? 'selected' : ''}}" bindtap="selectPlan" data-plan="monthly">
+      <view class="plan-header">
+        <text class="plan-name">月卡</text>
+        <text class="plan-price">¥9.9</text>
+      </view>
+    </view>
+
+    <!-- 季卡 -->
+    <view class="plan-item {{selectedPlan === 'quarterly' ? 'selected' : ''}}" bindtap="selectPlan" data-plan="quarterly">
+      <view class="plan-header">
+        <text class="plan-name">季卡</text>
+        <text class="plan-price">¥25.9</text>
+      </view>
+    </view>
+
+    <!-- 年卡 -->
+    <view class="plan-item {{selectedPlan === 'yearly' ? 'selected' : ''}}" bindtap="selectPlan" data-plan="yearly">
+      <view class="plan-header">
+        <text class="plan-name">年卡</text>
+        <text class="plan-price">¥89.9</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 开通按钮 -->
+  <view class="action-section">
+    <button class="subscribe-btn {{selectedPlan ? 'active' : 'disabled'}}"
+            bindtap="subscribe"
+            disabled="{{!selectedPlan}}">
+      立即开通
+    </button>
+  </view>
+
+  <!-- 激活码区域 -->
+  <view class="activation-section">
+    <view style="text-align: center;">
+      <view class="section-title">或使用激活码（卡密）兑换</view>
+    </view>
+    <view class="activation-box">
+      <input class="activation-input" 
+             placeholder="请输入激活码"  
+             placeholder-class="input-placeholder" 
+             bindinput="onCodeInput" 
+             value="{{activationCode}}" />
+      <button class="activation-btn" bindtap="activateCode">兑换</button>
+    </view>
+  </view>
+  </view>
+</view>
