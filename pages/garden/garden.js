@@ -3,7 +3,10 @@
 // 定义跨环境云开发实例
 const CROSS_ENV_ID = 'cloud1-1gsyt78b92c539ef'; 
 const CROSS_APP_ID = 'wx85d92d28575a70f4';
+const GARDEN_CACHE_KEY = 'summer_garden_cache';
+const GARDEN_CACHE_TTL = 10 * 60 * 1000;
 
+const reminderManager = require('../../utils/reminderManager')
 Page({
   data: {
     isLoggedIn: false, // 登录状态
@@ -30,6 +33,7 @@ Page({
     // 烦恼泡泡相关数据
     showWorryModal: false,
     worryText: '',
+    isRecording: false,
     isAnimating: false,
     fallingChars: [],
     plants: [],
@@ -53,7 +57,38 @@ Page({
       "把烦恼揉成小纸团，啪嗒一下投进筐，满分！",
       "烦恼是小怪兽，给它喂颗甜甜的糖，它就会乖乖跑掉！"
     ],
-    showSoundStarter: false
+    showSoundStarter: false,
+    showReminderModal: false,
+    reminderContent: '',
+    reminderId: ''
+  },
+
+  _readGardenCache: function () {
+    try {
+      const c = wx.getStorageSync(GARDEN_CACHE_KEY) || null;
+      if (!c || !c.savedAt) return null;
+      if (Date.now() - Number(c.savedAt) > GARDEN_CACHE_TTL) return null;
+      return c.data || null;
+    } catch (_) { return null; }
+  },
+  applyGardenCache: function () {
+    const d = this._readGardenCache();
+    if (!d) return;
+    const p = {};
+    if (typeof d.checkinDays === 'number') p.checkinDays = d.checkinDays;
+    if (typeof d.unlockedImages === 'number') p.unlockedImages = d.unlockedImages;
+    if (typeof d.isVip === 'boolean') p.isVip = d.isVip;
+    if (typeof d.vipExpiry === 'string') p.vipExpiry = d.vipExpiry;
+    if (typeof d.audioCount === 'number') p.audioCount = d.audioCount;
+    if (typeof d.cardCount === 'number') p.cardCount = d.cardCount;
+    if (Object.keys(p).length) this.setData(p);
+  },
+  _mergeGardenCache: function (update) {
+    try {
+      const ex = wx.getStorageSync(GARDEN_CACHE_KEY) || {};
+      const data = Object.assign({}, ex.data || {}, update || {});
+      wx.setStorageSync(GARDEN_CACHE_KEY, { data, savedAt: Date.now() });
+    } catch (_) {}
   },
 
   onLoad: function (options) {
@@ -67,6 +102,7 @@ Page({
     }
     
     this.initPageData();
+    this.initRecord();
   },
 
   onShow: function () {
@@ -74,9 +110,10 @@ Page({
     this.recordLoginDay();
     
     this.initPageData();
-    const enabled = wx.getStorageSync('backgroundMusicEnabled');
+    const app = (typeof getApp === 'function') ? getApp() : null;
+    const enabled = app && app.globalData && app.globalData.bgmEnabled === false ? false : true;
     const started = wx.getStorageSync('soundStarted');
-    const needStarter = (enabled !== false) && !started;
+    const needStarter = enabled && !started;
     if (needStarter) {
       this.setData({ showSoundStarter: true });
     } else {
@@ -84,12 +121,32 @@ Page({
         getApp().playMusic();
       }
     }
+
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) {
+      this.getTabBar().setData({
+        selected: 0
+      });
+    }
+    try { reminderManager.checkAndNotify(); } catch (_) {}
+    try {
+      const pending = wx.getStorageSync('summer_time_capsule_pending') || null
+      if (pending && pending.id) {
+        try { wx.setStorageSync('summer_time_capsule_last_shown', pending.id) } catch (_) {}
+        this.setData({ showReminderModal: true, reminderContent: String(pending.content || ''), reminderId: pending.id })
+        wx.removeStorageSync('summer_time_capsule_pending')
+      }
+    } catch (_) {}
+  },
+
+  onTabItemTap: function () {
+    if (getApp().playClickSound) getApp().playClickSound();
   },
 
   /**
    * 统一初始化页面数据
    */
   initPageData: async function() {
+    this.applyGardenCache();
     // 1. 加载本地用户基础信息
     this.loadUserInfo();
 
@@ -265,22 +322,37 @@ Page({
     const db = this.cloud.database();
     
     try {
-        // 1. 获取用户统计数据 (checkinDays)
-        const userRes = await db.collection('summeruser').get();
+        // 1. 获取用户统计数据 (checkinDays)，按 openid 精确定位
+        let openid = wx.getStorageSync('openid');
+        if (!openid) {
+            try {
+                const loginRes = await this.cloud.callFunction({ name: 'login', data: {} });
+                openid = loginRes && loginRes.result && loginRes.result.openid ? loginRes.result.openid : '';
+                if (openid) wx.setStorageSync('openid', openid);
+            } catch (_) {}
+        }
+        const userRes = openid 
+            ? await db.collection('summeruser').where({ _openid: openid }).get()
+            : await db.collection('summeruser').get();
         let checkinDays = 0;
         
         if (userRes.data.length > 0) {
             checkinDays = userRes.data[0].checkinDays || 0;
         }
 
-        // 2. 获取解锁形象数量
-        const unlockRes = await db.collection('summer_avatar_unlock').count();
-        const unlockedImages = unlockRes.total;
-
+        // 2. 获取本用户解锁形象数量（按 openid）
+        let unlockedImages = 0;
+        if (openid) {
+            const unlockRes = await db.collection('summer_avatar_unlock')
+                .where({ _openid: openid })
+                .count();
+            unlockedImages = unlockRes.total;
+        }
         this.setData({
             checkinDays: checkinDays,
             unlockedImages: unlockedImages
         });
+        this._mergeGardenCache({ checkinDays, unlockedImages });
 
     } catch (err) {
         console.error('加载打卡统计失败', err);
@@ -313,6 +385,7 @@ Page({
             audioCount: musicCountRes.total,
             cardCount: articleCountRes.total
         });
+        this._mergeGardenCache({ audioCount: musicCountRes.total, cardCount: articleCountRes.total });
         
     } catch (err) {
         console.error('加载收藏统计失败', err);
@@ -342,6 +415,7 @@ Page({
           wx.showToast({ title: '会员已过期，已取消', icon: 'none' });
           wx.setStorageSync(noticeKey, Number(expiryTs));
         }
+        this._mergeGardenCache({ isVip: false, vipExpiry: '' });
       } else {
         const isVip = !!r.isVip;
         this.setData({ isVip: isVip, vipExpiry: expiryStr });
@@ -350,6 +424,7 @@ Page({
         if (savedTs && expiryTs && Number(expiryTs) > nowTs) {
           wx.removeStorageSync(noticeKey);
         }
+        this._mergeGardenCache({ isVip: !!r.isVip, vipExpiry: expiryStr });
       }
     } catch (e) {}
   },
@@ -379,6 +454,10 @@ Page({
    * 加载用户当前设置的形象 (新增)
    */
   loadUserAvatar: async function() {
+      const cached = wx.getStorageSync('currentAvatar') || '';
+      if (cached) {
+          this.setData({ currentAvatar: cached });
+      }
       if (!this.cloud) return;
       const db = this.cloud.database();
       
@@ -462,6 +541,7 @@ Page({
    * 快速登录
    */
   quickLogin: function () {
+    if (getApp().playClickSound) getApp().playClickSound();
     // 跳转到登录页面
     wx.navigateTo({
       url: '/pages/login/login'
@@ -472,19 +552,43 @@ Page({
    * 点击悬浮形象
    */
   onCharacterTap: function () {
-    // 触发波动动画（通过添加CSS类实现）
-    // 这里可以添加更多的交互逻辑
-    wx.showToast({
-      title: '点击了小绵羊！',
-      icon: 'none',
-      duration: 1500
-    });
+    if (getApp().playClickSound) getApp().playClickSound();
+    const now = new Date();
+    if (!(now.getDay() === 1 && now.getHours() >= 9)) {
+      wx.showToast({ title: '每周一上午9点解锁周报', icon: 'none' });
+      return;
+    }
+    wx.navigateTo({ url: '/pages/weekly-report/weekly-report' });
+  },
+  _pad2: function (n) {
+    return n < 10 ? ('0' + n) : String(n);
+  },
+  _getWeekMondayStr: function (d) {
+    const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const day = x.getDay();
+    const diffSinceMonday = (day + 6) % 7;
+    x.setDate(x.getDate() - diffSinceMonday);
+    const y = x.getFullYear();
+    const m = this._pad2(x.getMonth() + 1);
+    const dd = this._pad2(x.getDate());
+    return `${y}-${m}-${dd}`;
+  },
+  _getPrevWeekMondayStr: function (d) {
+    const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const day = x.getDay();
+    const diffSinceMonday = (day + 6) % 7;
+    x.setDate(x.getDate() - diffSinceMonday - 7);
+    const y = x.getFullYear();
+    const m = this._pad2(x.getMonth() + 1);
+    const dd = this._pad2(x.getDate());
+    return `${y}-${m}-${dd}`;
   },
 
   /**
    * 编辑个人资料
    */
   editProfile: function () {
+    if (getApp().playClickSound) getApp().playClickSound();
     // 跳转到设置页面
     wx.navigateTo({
       url: '/pages/profile/profile'
@@ -496,6 +600,7 @@ Page({
    * 打开打卡页面
    */
   openCheckinPage: function () {
+    if (getApp().playClickSound) getApp().playClickSound();
     wx.navigateTo({
       url: '/pages/checkin/checkin'
     });
@@ -505,6 +610,7 @@ Page({
    * 打开关于我们页面
    */
   openAbout: function () {
+    if (getApp().playClickSound) getApp().playClickSound();
     this.setData({
       showAboutModal: true
     });
@@ -514,6 +620,7 @@ Page({
    * 关闭关于我们模态框
    */
   closeAboutModal: function () {
+    if (getApp().playClickSound) getApp().playClickSound();
     this.setData({
       showAboutModal: false
     });
@@ -523,6 +630,7 @@ Page({
    * 打开会员页面
    */
   openVip: function () {
+    if (getApp().playClickSound) getApp().playClickSound();
     wx.navigateTo({
       url: '/pages/vip/vip'
     });
@@ -532,6 +640,7 @@ Page({
    * 打开收藏库页面
    */
   openCollection: function () {
+    if (getApp().playClickSound) getApp().playClickSound();
     wx.navigateTo({
       url: '/pages/collection/collection'
     });
@@ -541,19 +650,30 @@ Page({
    * 打开帮助中心
    */
   openHelp: function () {
+    if (getApp().playClickSound) getApp().playClickSound();
     wx.navigateTo({
       url: '/pages/service/service'
     });
   },
   
+  
+  
   /**
    * 气泡拖动开始
    */
   onBubbleTouchStart: function(e) {
-    // 记录开始触摸的坐标和状态
+    if (this._bubbleInertiaTimer) {
+      clearInterval(this._bubbleInertiaTimer);
+      this._bubbleInertiaTimer = null;
+    }
     this._bubbleStartX = e.touches[0].clientX;
     this._bubbleStartY = e.touches[0].clientY;
     this._hasMoved = false; // 重置移动标记
+    this._prevX = this._bubbleStartX;
+    this._prevY = this._bubbleStartY;
+    this._prevTime = e.timeStamp;
+    this._vx = 0;
+    this._vy = 0;
 
     this.setData({
       isDraggingBubble: true,
@@ -568,8 +688,10 @@ Page({
   onBubbleTouchMove: function(e) {
     if (!this.data.isDraggingBubble) return;
     
-    const dx = e.touches[0].clientX - this._bubbleStartX;
-    const dy = e.touches[0].clientY - this._bubbleStartY;
+    const curX = e.touches[0].clientX;
+    const curY = e.touches[0].clientY;
+    const dx = curX - this._bubbleStartX;
+    const dy = curY - this._bubbleStartY;
 
     // 如果尚未确认为移动，检查是否超过阈值
     if (!this._hasMoved) {
@@ -586,16 +708,10 @@ Page({
     let newTop = this.data.initialBubbleTop + dy;
     
     // 边界限制 (使用 wx.getWindowInfo 替代 deprecated API)
-    let windowInfo;
-    try {
-        windowInfo = wx.getWindowInfo();
-    } catch (error) {
-        // Fallback for older versions if needed
-        windowInfo = wx.getSystemInfoSync();
-    }
+    const windowInfo = (typeof wx.getWindowInfo === 'function') ? wx.getWindowInfo() : { windowWidth: 375, windowHeight: 667 };
     const windowWidth = windowInfo.windowWidth;
     const windowHeight = windowInfo.windowHeight;
-    const bubbleSize = 60; // 假设气泡大概大小 px
+    const bubbleSize = Math.round(windowWidth * 110 / 750);
     
     if (newLeft < 0) newLeft = 0;
     if (newLeft > windowWidth - bubbleSize) newLeft = windowWidth - bubbleSize;
@@ -606,6 +722,15 @@ Page({
       bubbleLeft: newLeft,
       bubbleTop: newTop
     });
+    
+    const dt = e.timeStamp - (this._prevTime || e.timeStamp);
+    if (dt > 0) {
+      this._vx = (curX - this._prevX) / dt * 1000;
+      this._vy = (curY - this._prevY) / dt * 1000;
+      this._prevX = curX;
+      this._prevY = curY;
+      this._prevTime = e.timeStamp;
+    }
   },
 
   /**
@@ -619,14 +744,73 @@ Page({
     // 如果没有移动（即点击），则打开模态框
     if (!this._hasMoved) {
       this.openWorryModal();
+      return;
     }
+    
+    const windowInfo = (typeof wx.getWindowInfo === 'function') ? wx.getWindowInfo() : { windowWidth: 375, windowHeight: 667 };
+    const windowWidth = windowInfo.windowWidth;
+    const windowHeight = windowInfo.windowHeight;
+    const bubbleSize = Math.round(windowWidth * 110 / 750);
+    const restitution = 0.6;
+    const friction = 0.92;
+    const start = Date.now();
+    this._animPrevTime = Date.now();
+    
+    if (this._bubbleInertiaTimer) {
+      clearInterval(this._bubbleInertiaTimer);
+      this._bubbleInertiaTimer = null;
+    }
+    this._bubbleInertiaTimer = setInterval(() => {
+      const now = Date.now();
+      const dt = now - (this._animPrevTime || now);
+      this._animPrevTime = now;
+      const dtSec = dt / 1000;
+      
+      let left = this.data.bubbleLeft + this._vx * dtSec;
+      let top = this.data.bubbleTop + this._vy * dtSec;
+      let vx = this._vx;
+      let vy = this._vy;
+      
+      if (left < 0) {
+        left = 0;
+        vx = -vx * restitution;
+      }
+      if (left > windowWidth - bubbleSize) {
+        left = windowWidth - bubbleSize;
+        vx = -vx * restitution;
+      }
+      if (top < 0) {
+        top = 0;
+        vy = -vy * restitution;
+      }
+      if (top > windowHeight - bubbleSize) {
+        top = windowHeight - bubbleSize;
+        vy = -vy * restitution;
+      }
+      
+      vx *= friction;
+      vy *= friction;
+      this._vx = vx;
+      this._vy = vy;
+      
+      this.setData({
+        bubbleLeft: left,
+        bubbleTop: top
+      });
+      
+      const speed = Math.sqrt(vx * vx + vy * vy);
+      if (speed < 10 || now - start > 1500) {
+        clearInterval(this._bubbleInertiaTimer);
+        this._bubbleInertiaTimer = null;
+      }
+    }, 16);
   },
 
   /**
    * 打开烦恼输入模态框
    */
   openWorryModal: function () {
-    getApp().playClickSound();
+    if (getApp().playClickSound) getApp().playClickSound();
     this.setData({
       showWorryModal: true,
       worryText: ''
@@ -637,6 +821,7 @@ Page({
    * 关闭烦恼输入模态框
    */
   closeWorryModal: function () {
+    if (getApp().playClickSound) getApp().playClickSound();
     this.setData({
       showWorryModal: false
     });
@@ -647,6 +832,22 @@ Page({
    */
   stopProp: function () {
     return;
+  },
+  closeReminderModal: function () {
+    if (getApp().playClickSound) getApp().playClickSound();
+    this.setData({ showReminderModal: false, reminderContent: '', reminderId: '' });
+  },
+  onReminderDone: function () {
+    if (getApp().playClickSound) getApp().playClickSound();
+    const rid = this.data.reminderId;
+    if (rid) reminderManager.markResult(rid, 'done');
+    this.setData({ showReminderModal: false, reminderContent: '', reminderId: '' });
+  },
+  onReminderMissed: function () {
+    if (getApp().playClickSound) getApp().playClickSound();
+    const rid = this.data.reminderId;
+    if (rid) reminderManager.markResult(rid, 'missed');
+    this.setData({ showReminderModal: false, reminderContent: '', reminderId: '' });
   },
 
   /**
@@ -662,6 +863,7 @@ Page({
    * 提交烦恼
    */
   submitWorry: function () {
+    if (getApp().playClickSound) getApp().playClickSound();
     const text = this.data.worryText;
     if (!text.trim()) {
       wx.showToast({
@@ -816,6 +1018,7 @@ Page({
    * 关闭动画
    */
   closeAnimation: function () {
+    if (getApp().playClickSound) getApp().playClickSound();
     if (this.worryAudio) {
       this.worryAudio.stop();
       this.worryAudio.destroy();
@@ -839,13 +1042,135 @@ Page({
     });
   },
 
+  initRecord: function () {
+    const that = this;
+    try {
+      const plugin = requirePlugin("WechatSI");
+      const manager = plugin.getRecordRecognitionManager();
+
+      manager.onStart = function () {
+        wx.showToast({
+          title: '正在聆听...',
+          icon: 'none',
+          duration: 30000
+        });
+      };
+
+      manager.onRecognize = function () {};
+
+      manager.onStop = function (res) {
+        wx.hideToast();
+        if (res.result) {
+          const currentText = that.data.worryText || '';
+          that.setData({
+            worryText: currentText + res.result,
+            isRecording: false
+          });
+        } else {
+          that.setData({ isRecording: false });
+          wx.showToast({ title: '未识别到内容', icon: 'none' });
+        }
+      };
+
+      manager.onError = function (res) {
+        wx.hideToast();
+        that.setData({ isRecording: false });
+
+        let errorMsg = '语音识别失败';
+        if (res.retcode === -30001 || res.retcode === -30002) {
+          errorMsg = '录音接口出错';
+        } else if (res.retcode === -30004) {
+          errorMsg = '网络不稳定';
+        } else if (res.retcode === -30003) {
+          errorMsg = '录音时间太短';
+        }
+
+        wx.showToast({ title: errorMsg, icon: 'none' });
+      };
+
+      that.recordManager = manager;
+    } catch (e) {
+      wx.showModal({
+        title: '插件加载失败',
+        content: '请确保在小程序管理后台添加了“微信同声传译”插件，并在开发者工具中清除缓存后重试。',
+        showCancel: false
+      });
+    }
+  },
+
+  startRecord: function () {
+    if (getApp().playClickSound) getApp().playClickSound();
+    const that = this;
+    wx.getSetting({
+      success(res) {
+        if (!res.authSetting['scope.record']) {
+          wx.authorize({
+            scope: 'scope.record',
+            success() {
+              that._startRecordAction();
+            },
+            fail() {
+              wx.showModal({
+                title: '提示',
+                content: '需要录音权限才能进行语音识别',
+                success(res) {
+                  if (res.confirm) {
+                    wx.openSetting();
+                  }
+                }
+              });
+            }
+          });
+        } else {
+          that._startRecordAction();
+        }
+      }
+    });
+  },
+
+  _startRecordAction: function () {
+    if (this.data.isRecording) return;
+
+    this.setData({ isRecording: true });
+    if (this.recordManager) {
+      try {
+        this.recordManager.start({ duration: 30000, lang: "zh_CN" });
+      } catch (e) {
+        this.setData({ isRecording: false });
+      }
+    } else {
+      wx.showToast({ title: '语音插件未加载', icon: 'none' });
+      this.setData({ isRecording: false });
+    }
+  },
+
+  stopRecord: function () {
+    if (getApp().playClickSound) getApp().playClickSound();
+    if (!this.data.isRecording) return;
+
+    if (this.recordManager) {
+      try {
+        this.recordManager.stop();
+      } catch (e) {}
+    }
+    this.setData({ isRecording: false });
+  },
+
   onHide: function () {
+    if (this._bubbleInertiaTimer) {
+      clearInterval(this._bubbleInertiaTimer);
+      this._bubbleInertiaTimer = null;
+    }
     if (this.data.isAnimating) {
       this.closeAnimation();
     }
   },
 
   onUnload: function () {
+    if (this._bubbleInertiaTimer) {
+      clearInterval(this._bubbleInertiaTimer);
+      this._bubbleInertiaTimer = null;
+    }
     if (this.data.isAnimating) {
       this.closeAnimation();
     }

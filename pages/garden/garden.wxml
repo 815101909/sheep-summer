@@ -1,11 +1,11 @@
 <!--pages/garden/garden.wxml-->
 <!-- 背景层 -->
-<view class="background-container">
+<view class="background-container {{themeClass}}">
   <image class="background-image" src="/assets/images/splash-bg.png" mode="aspectFill" />
 </view>
 
 <!-- 用户信息区域 -->
-<view class="user-profile">
+<view class="user-profile {{themeClass}}">
   <!-- 用户头像和信息水平布局 -->
   <view class="user-header">
     <!-- 用户头像 -->
@@ -31,7 +31,7 @@
   </view>
 
   <!-- 用户数据 -->
-  <view class="user-stats">
+  <view class="user-stats {{themeClass}}">
     <view class="stat-item">
       <text class="stat-number">{{userInfo.daysCount || 0}}</text>
       <text class="stat-label">登录天数</text>
@@ -47,9 +47,9 @@
   </view>
 
   <!-- A4区域 -->
-  <view class="a4-preview-section">
+  <view class="a4-preview-section {{themeClass}}">
     <view class="a4-preview-container">
-      <view class="a4-preview-paper">
+      <view class="a4-preview-paper {{themeClass}}">
         <!-- 小绵羊的打卡站 -->
         <view class="a4-column checkin-station" hover-class="zoom" bindtap="openCheckinPage">
           <view class="column-header">
@@ -107,10 +107,10 @@
   </view>
 
   <!-- 悬浮形象和提示文字 -->
-  <view class="floating-character-section">
+  <view class="floating-character-section {{themeClass}}">
     <!-- 提示文字 -->
     <view class="character-tip-text">
-      <text class="tip-content">和夏小咩一起打卡，可解锁更多形象哦！</text>
+      <text class="tip-content">Hi~每周一上午9点，一起点击右侧夏小\n咩的形象，可以解锁每周的成长报告哦</text>
     </view>
 
     <!-- 小卡片默认形象 - 悬浮在A4区域右上角 -->
@@ -118,7 +118,7 @@
   </view>
 
   <!-- 设置选项 -->
-<view class="settings-section">
+<view class="settings-section {{themeClass}}">
   <view class="setting-item" bindtap="openAbout">
     <image class="setting-image" src="/assets/images/关于我们.png" mode="aspectFit" />
     <text class="setting-text">关于我们</text>
@@ -130,22 +130,7 @@
     <text class="setting-arrow">></text>
   </view>
 </view>
-<!-- 漂浮的小泡泡 -->
-<view class="worry-bubble" 
-      catchtouchmove="onBubbleTouchMove" 
-      catchtouchstart="onBubbleTouchStart"
-      catchtouchend="onBubbleTouchEnd"
-      style="left: {{bubbleLeft}}px; top: {{bubbleTop}}px;"
-      wx:if="{{!showWorryModal && !isAnimating && !showAboutModal}}">
-  <view class="bubble-circle">
-    <view class="icon-bubbles">
-      <view class="icon-bubble ib-1"></view>
-      <view class="icon-bubble ib-2"></view>
-      <view class="icon-bubble ib-3"></view>
-    </view>
-  </view>
-  <view class="bubble-text">烦恼橡皮擦</view>
-</view>
+
 
 <!-- 烦恼输入模态框 -->
 <view class="custom-modal-mask" wx:if="{{showWorryModal}}" bindtap="closeWorryModal">
@@ -154,7 +139,18 @@
     <view class="modal-body">
       <view class="modal-title">把烦恼告诉小绵羊</view>
       <textarea class="worry-input" placeholder="在这里写下你的烦恼..." bindinput="onWorryInput" value="{{worryText}}" maxlength="50"></textarea>
-      <view class="modal-btn" bindtap="submitWorry">一 起 弹 走 烦 恼 吧</view>
+      
+      <view class="action-btn-row">
+        <view class="voice-btn-container" 
+              catchtouchstart="startRecord" 
+              catchtouchend="stopRecord"
+              hover-class="voice-btn-hover">
+          <text class="voice-icon">🎤</text>
+          <text class="voice-text">{{isRecording ? '松开' : '按住说话'}}</text>
+        </view>
+
+        <view class="modal-btn" bindtap="submitWorry">一 起 弹 走 烦 恼 吧</view>
+      </view>
     </view>
   </view>
 </view>
@@ -177,6 +173,23 @@
   <!-- 关闭按钮 -->
   <view class="close-animation-btn" bindtap="closeAnimation">×</view>
 </view>
+
+<!-- 时光胶囊提醒弹窗 -->
+<view class="custom-modal-mask" wx:if="{{showReminderModal}}" bindtap="closeReminderModal">
+  <view class="custom-modal-content reminder-modal-content" catchtap="stopProp">
+    <image class="modal-bg" src="/assets/images/splash-bg.png" mode="aspectFill" />
+    <view class="modal-body">
+      <view class="modal-title">时光胶囊开启</view>
+      <view class="modal-text">
+        <text class="modal-paragraph">{{reminderContent}}</text>
+      </view>
+      <view class="action-btn-row">
+        <view class="modal-btn" bindtap="onReminderMissed">未完成</view>
+        <view class="modal-btn" bindtap="onReminderDone">已完成</view>
+      </view>
+    </view>
+  </view>
+  </view>
 
 <!-- 关于我们自定义模态框 -->
 <view class="custom-modal-mask" wx:if="{{showAboutModal}}" bindtap="closeAboutModal">

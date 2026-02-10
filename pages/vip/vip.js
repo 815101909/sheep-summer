@@ -6,15 +6,15 @@ Page({
 
     // 套餐信息
     plans: {
-      monthly: { name: '月卡', price: '¥9.9', value: 9.9, duration: 1 },
-      quarterly: { name: '季卡', price: '¥25.9', value: 25.9, duration: 3 },
-      yearly: { name: '年卡', price: '¥89.9', value: 89.9, duration: 12 }
+      monthly: { name: '月卡', price: '', value: 0, duration: 1 },
+      quarterly: { name: '季卡', price: '', value: 0, duration: 3 },
+      yearly: { name: '年卡', price: '', value: 0, duration: 12 }
     },
     activationCode: ''
   },
 
   onLoad: function (options) {
-    // 页面加载时的初始化
+    this.loadPlans();
   },
 
   onShow: function () {
@@ -178,6 +178,7 @@ Page({
    * 选择套餐
    */
   selectPlan: function (e) {
+    if (getApp().playClickSound) getApp().playClickSound();
     const plan = e.currentTarget.dataset.plan;
     const planInfo = this.data.plans[plan];
 
@@ -329,7 +330,41 @@ Page({
           }
       });
   },
-});
 
+  loadPlans: function () {
+    const cloud = getApp().cloud || wx.cloud;
+    cloud.callFunction({
+      name: 'summer_pay',
+      data: { action: 'getPlans' },
+      success: res => {
+        const list = res.result && res.result.data ? res.result.data : [];
+        const map = { ...this.data.plans };
+        list.forEach(doc => {
+          const pid = doc.planId;
+          let val = 0;
+          let priceStr = '';
+          if (typeof doc.priceCents === 'number') {
+            val = Number(doc.priceCents);
+            priceStr = '¥' + String(val);
+          } else if (typeof doc.priceYuan === 'number') {
+            val = Number(doc.priceYuan);
+            priceStr = '¥' + String(val);
+          } else if (typeof doc.price === 'number') {
+            val = Number(doc.price);
+            priceStr = '¥' + String(val);
+          } else if (typeof doc.displayPrice === 'string') {
+            priceStr = doc.displayPrice;
+          }
+          const name = doc.name || (pid === 'monthly' ? '月卡' : pid === 'quarterly' ? '季卡' : pid === 'yearly' ? '年卡' : '');
+          const duration = map[pid] && map[pid].duration ? map[pid].duration : 1;
+          if (pid) {
+            map[pid] = { name, price: priceStr, value: val, duration };
+          }
+        });
+        this.setData({ plans: map });
+      }
+    });
+  }
+});
 
 

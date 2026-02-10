@@ -22,6 +22,7 @@ exports.main = async (event, context) => {
       // 获取所有歌曲，按 sort_order 排序
       // 注意：如果是大量数据需要分页，这里暂取前 100 条
       return await db.collection('summer_music_library')
+        .where({ status: true })
         .orderBy('sort_order', 'asc')
         .limit(100)
         .get()

@@ -1,11 +1,11 @@
 <!--pages/profile/profile.wxml-->
 <!-- 背景层 -->
-<view class="background-container">
+<view class="background-container {{themeClass}}">
   <image class="background-image" src="/assets/images/splash-bg.png" mode="aspectFill" />
 </view>
 
 <!-- 主要内容 -->
-<view class="profile-content">
+<view class="profile-content {{themeClass}}">
   <!-- 头像区域 -->
   <view class="avatar-section">
     <!-- 当前头像 -->
@@ -56,6 +56,15 @@
 
   <!-- 设置选项 -->
   <view class="settings-section">
+    <view class="setting-item">
+      <view class="setting-left">
+        <text class="setting-icon">🌓</text>
+        <text class="setting-text">主题模式</text>
+      </view>
+      <picker mode="selector" range="{{themeOptions}}" value="{{themeModeIndex}}" bindchange="onThemeModeChange">
+        <view class="setting-value">{{themeModeLabel}}</view>
+      </picker>
+    </view>
     <!-- 背景音乐 -->
     <view class="setting-item">
       <view class="setting-left">
@@ -74,5 +83,4 @@
     </view>
   </view>
 </view>
-
 

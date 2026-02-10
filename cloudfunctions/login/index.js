@@ -81,17 +81,18 @@ exports.main = async (event, context) => {
         }
       }
 
-      const createTime = db.serverDate()
       const newUser = {
         openid: userOpenid,
         _openid: userOpenid,
         userId: newUserId, // 新增唯一userId
-        registerDate: createTime,
-        lastLoginDate: createTime,
+        registerDate: Date.now(),
+        lastLoginDate: Date.now(),
         // 初始化默认字段
         nickName: '夏小咩',
         avatarUrl: '',
         vipLevel: false, // 默认会员等级
+        isVip: true,
+        vipExpireTime: Date.now() + 3 * 24 * 60 * 60 * 1000,
         points: 0,    // 默认积分
         referrer: event.referrer || '' // 推荐人
       }
@@ -107,7 +108,7 @@ exports.main = async (event, context) => {
       const userId = userRes.data[0]._id
       await usersCollection.doc(userId).update({
         data: {
-          lastLoginDate: db.serverDate()
+          lastLoginDate: Date.now()
         }
       })
       userData = userRes.data[0]

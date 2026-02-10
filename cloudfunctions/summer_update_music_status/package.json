@@ -1,0 +1,12 @@
+{
+  "name": "summer_update_music_status",
+  "version": "1.0.0",
+  "description": "更新随身听发布状态为true（按publish_time与当前时间）",
+  "main": "index.js",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}
+

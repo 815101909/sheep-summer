@@ -6,23 +6,27 @@ Page({
    */
   data: {
     carouselItems: [], // 将动态生成
+    todayGentleList: [],
+    currentGentleIndex: 0,
+    dailyTendernessItem: null,
     selectedDate: '', // 存储选择的日期
     selectedDateText: '', // 显示的日期文本
     selectedType: '全部', // 存储选择的类型
     selectedTypeText: '全部', // 显示的类型文本
     typeOptions: ['全部', '文化', '生活', '成长', '科技', '技能', '祝福', '思考', '学习', '旅行', '商业', '体育', '热词', '医疗', '健康', '历史', '人物', '节日'], // 类型选项
     showTypeDropdown: false, // 控制类型下拉列表显示隐藏
-    selectedDifficulty: '全部',
-    selectedDifficultyText: '全部',
-    difficultyOptions: ['全部', '低难度', '高难度'],
-    showDifficultyDropdown: false,
     timelineData: [], // 初始为空
     filteredTimelineData: [], // 存储筛选后的时间线数据
+    displayFilteredTimelineData: [],
+    displayLimit: 8,
+    displayIncrement: 8,
 
     // 收藏状态
     favoriteArticles: [40, 41],
     favoriteKeys: []
   },
+
+  gentleTimer: null,
 
   /**
    * 生命周期函数--监听页面加载
@@ -40,15 +44,69 @@ Page({
       favoriteArticles: favoriteArticles
     });
 
-    // 从云端加载数据
+    this.loadDailyTenderness();
     this.loadArticlesFromCloud();
+  },
+
+  loadDailyTenderness: async function() {
+    try {
+      const cached = wx.getStorageSync('summer_daily_tenderness_cache') || null;
+      if (cached && cached.expiresAt && cached.expiresAt > Date.now() && cached.item) {
+        this.setData({ dailyTendernessItem: cached.item });
+        return;
+      }
+      await this.initCloud();
+      const db = this.cloud.database();
+      const res = await db.collection('summer_daily_tenderness')
+        .orderBy('publish_time', 'desc')
+        .limit(1)
+        .get();
+      if (res.data && res.data.length > 0) {
+        const item = res.data[0];
+        let pictureUrl = item.picture;
+        if (pictureUrl && pictureUrl.startsWith('cloud://')) {
+          try {
+            const ttlMs = 2 * 60 * 60 * 1000;
+            const tempMap = await this.convertTempUrlsWithCache(this.cloud, [pictureUrl], ttlMs);
+            pictureUrl = tempMap[pictureUrl] || pictureUrl;
+          } catch (_) {}
+        }
+        const dataItem = {
+          id: item._id,
+          cover: pictureUrl,
+          publish_time: item.publish_time
+        };
+        this.setData({ dailyTendernessItem: dataItem });
+        try {
+          wx.setStorageSync('summer_daily_tenderness_cache', {
+            item: dataItem,
+            expiresAt: Date.now() + 3 * 60 * 60 * 1000
+          });
+        } catch (_) {}
+      }
+    } catch (err) {}
   },
 
   /**
    * 从云端加载文章数据
    */
   loadArticlesFromCloud: async function() {
-    wx.showLoading({ title: '加载中...' });
+    let hasCache = false;
+    try {
+      const cached = wx.getStorageSync('summer_timeline_cache') || null;
+      if (cached && cached.expiresAt && cached.expiresAt > Date.now()) {
+        this.setData({
+          carouselItems: cached.carouselItems || [],
+          timelineData: cached.timelineData || []
+        });
+        this.filterTimeline();
+        this.computeTodayGentle();
+        hasCache = true;
+      }
+    } catch (_) {}
+    if (!hasCache) {
+      wx.showLoading({ title: '加载中...' });
+    }
     
     // 初始化跨环境云实例
     const c1 = new wx.cloud.Cloud({
@@ -82,18 +140,15 @@ Page({
             if (item.cover_image && item.cover_image.startsWith('cloud://')) fileList.push(item.cover_image);
             if (item.a4_image && item.a4_image.startsWith('cloud://')) fileList.push(item.a4_image);
         });
+        const fixedSmallCover = 'cloud://cloud1-1gsyt78b92c539ef.636c-cloud1-1gsyt78b92c539ef-1370520707/cover/轻松一夏.jpg';
+        fileList.push(fixedSmallCover);
 
         // 批量换取临时链接
         let tempUrlMap = {};
         if (fileList.length > 0) {
             try {
-                const tempRes = await c1.getTempFileURL({
-                    fileList: fileList,
-                    config: { maxAge: 3 * 60 * 60 }
-                });
-                tempRes.fileList.forEach(file => {
-                    if (file.status === 0) tempUrlMap[file.fileID] = file.tempFileURL;
-                });
+                const ttlMs = 2 * 60 * 60 * 1000;
+                tempUrlMap = await this.convertTempUrlsWithCache(c1, fileList, ttlMs);
             } catch (err) {
                 console.error('图片链接转换失败', err);
             }
@@ -116,11 +171,13 @@ Page({
                 id: item._id,
                 titleCn: item.title || '无标题',
                 subtitle: item.subtitle || '',
-                category: item.category || '未分类',
+                category: '未分类',
                 date: formatDate(item.publish_date),
                 cover: tempUrlMap[item.cover_image] || item.cover_image || '',
                 a4Image: tempUrlMap[item.a4_image] || item.a4_image || '',
-                level: item.level || 'low'
+                level: item.level || 'low',
+                smallCover: tempUrlMap[fixedSmallCover] || '',
+                isCarousel: !!item.is_carousel
             };
         });
 
@@ -141,11 +198,10 @@ Page({
         
         const timelineData = Array.from(timelineMap.values());
 
-        // 2. 生成 carouselItems (取前 5 个或者随机推荐)
-        // 这里简单取前 5 个
-        const carouselItems = processedArticles.slice(0, 5).map(article => ({
+        // 2. 生成 carouselItems (仅取 is_carousel 为 true 的前 5 个)
+        const carouselItems = processedArticles.filter(article => article.isCarousel).slice(0, 5).map(article => ({
             id: article.id,
-            title: article.titleCn, // 轮播图用 title
+            title: article.titleCn,
             cover: article.cover,
             date: article.date,
             category: article.category,
@@ -156,17 +212,121 @@ Page({
             carouselItems: carouselItems,
             timelineData: timelineData
         });
-
-        await this.initCloud();
-        await this.loadFavoriteSet();
         this.filterTimeline();
+        this.computeTodayGentle();
+        try {
+          wx.setStorageSync('summer_timeline_cache', {
+            carouselItems,
+            timelineData,
+            expiresAt: Date.now() + 10 * 60 * 1000
+          });
+        } catch (_) {}
+        this.initCloud().then(() => this.loadFavoriteSet().then(() => this.filterTimeline())).catch(() => {});
 
     } catch (err) {
         console.error('获取文章失败', err);
         wx.showToast({ title: '获取数据失败', icon: 'none' });
     } finally {
-        wx.hideLoading();
+        if (!hasCache) wx.hideLoading();
     }
+  },
+  getTempUrlCache() {
+    return wx.getStorageSync('temp_url_cache_map') || {};
+  },
+  setTempUrlCache(map) {
+    wx.setStorageSync('temp_url_cache_map', map || {});
+  },
+  getCachedTempUrl(fid) {
+    if (!fid) return '';
+    const map = this.getTempUrlCache();
+    const e = map[fid];
+    if (e && e.url && e.expiresAt && e.expiresAt > Date.now()) return e.url;
+    return '';
+  },
+  setCachedTempUrl(fid, url, ttlMs) {
+    if (!fid || !url) return;
+    const map = this.getTempUrlCache();
+    map[fid] = { url, expiresAt: Date.now() + (ttlMs || 0) };
+    this.setTempUrlCache(map);
+  },
+  async convertTempUrlsWithCache(c1, fids, ttlMs) {
+    const result = {};
+    const toFetch = [];
+    (fids || []).forEach(fid => {
+      const u = this.getCachedTempUrl(fid);
+      if (u) result[fid] = u;
+      else toFetch.push(fid);
+    });
+    if (toFetch.length) {
+      const secs = Math.max(1, Math.floor((ttlMs || 0) / 1000));
+      const resp = await c1.getTempFileURL({ fileList: toFetch, config: { maxAge: secs } });
+      const list = resp.fileList || [];
+      list.forEach(it => {
+        if (it.status === 0) {
+          result[it.fileID] = it.tempFileURL;
+          this.setCachedTempUrl(it.fileID, it.tempFileURL, ttlMs || 0);
+        }
+      });
+    }
+    return result;
+  },
+
+  computeTodayGentle: function () {
+    const { carouselItems } = this.data;
+    if (!carouselItems || carouselItems.length === 0) {
+      this.setData({ todayGentleList: [], currentGentleIndex: 0 });
+      return;
+    }
+    const candidates = carouselItems.slice(0, 5);
+    this.setData({
+      todayGentleList: candidates,
+      currentGentleIndex: 0
+    });
+    this.startGentleTimer();
+  },
+
+  startGentleTimer: function() {
+    this.stopGentleTimer();
+    if (this.data.todayGentleList.length > 1) {
+      this.gentleTimer = setInterval(() => {
+        this.nextGentleSlide();
+      }, 4000);
+    }
+  },
+
+  stopGentleTimer: function() {
+    if (this.gentleTimer) {
+      clearInterval(this.gentleTimer);
+      this.gentleTimer = null;
+    }
+  },
+
+  nextGentleSlide: function() {
+    const len = this.data.todayGentleList.length;
+    if (len < 2) return;
+    this.setData({
+      currentGentleIndex: (this.data.currentGentleIndex + 1) % len
+    });
+  },
+
+  prevGentleSlide: function() {
+    const len = this.data.todayGentleList.length;
+    if (len < 2) return;
+    this.setData({
+      currentGentleIndex: (this.data.currentGentleIndex - 1 + len) % len
+    });
+    this.startGentleTimer();
+  },
+
+  handleNextSlide: function() {
+    if (getApp().playClickSound) getApp().playClickSound();
+    this.nextGentleSlide();
+    this.startGentleTimer();
+  },
+
+  handlePrevSlide: function() {
+    if (getApp().playClickSound) getApp().playClickSound();
+    this.prevGentleSlide();
   },
 
   /**
@@ -185,6 +345,10 @@ Page({
         selected: 2
       })
     }
+  },
+
+  onTabItemTap: function () {
+    if (getApp().playClickSound) getApp().playClickSound();
   },
 
   /**
@@ -222,6 +386,7 @@ Page({
    * 选择全部日期
    */
   selectAllDates: function () {
+    if (getApp().playClickSound) getApp().playClickSound();
     this.setData({
       selectedDate: '',
       selectedDateText: '全部日期'
@@ -237,6 +402,7 @@ Page({
    * 显示日期选择器
    */
   showDatePicker: function () {
+    if (getApp().playClickSound) getApp().playClickSound();
     // 日期选择器会自动显示，因为picker组件绑定了showDatePicker事件
   },
 
@@ -244,6 +410,7 @@ Page({
    * 切换类型下拉列表显示/隐藏
    */
   toggleTypeDropdown: function () {
+    if (getApp().playClickSound) getApp().playClickSound();
     this.setData({
       showTypeDropdown: !this.data.showTypeDropdown
     });
@@ -259,6 +426,7 @@ Page({
    * 选择类型
    */
   selectType: function (e) {
+    if (getApp().playClickSound) getApp().playClickSound();
     const type = e.currentTarget.dataset.type;
     this.setData({
       selectedType: type,
@@ -273,6 +441,7 @@ Page({
   },
 
   selectDifficulty: function (e) {
+    if (getApp().playClickSound) getApp().playClickSound();
     const difficulty = e.currentTarget.dataset.difficulty;
     this.setData({
       selectedDifficulty: difficulty,
@@ -317,7 +486,7 @@ Page({
    * 筛选时间线数据
    */
   filterTimeline: function () {
-    const { timelineData, selectedDate, selectedType, selectedDifficulty } = this.data;
+    const { timelineData, selectedDate, selectedType } = this.data;
     let filteredData = timelineData;
 
     // 1. 按日期筛选 (精确匹配)
@@ -344,21 +513,7 @@ Page({
       });
     }
 
-    // 3. 按难度筛选（基于后端 level 字段，仅过滤卡片，不整天移除）
-    if (selectedDifficulty && selectedDifficulty !== '全部') {
-      const normalizeLevel = (lv) => {
-        const s = String(lv || '').toLowerCase();
-        if (s.includes('low') || s.includes('低')) return '低难度';
-        if (s.includes('high') || s.includes('高')) return '高难度';
-        return '低难度';
-      };
-      filteredData = filteredData
-        .map(dateBlock => {
-          const articles = (dateBlock.articles || []).filter(a => normalizeLevel(a.level) === selectedDifficulty);
-          return { ...dateBlock, articles };
-        })
-        .filter(db => (db.articles || []).length > 0);
-    }
+    // 3. 移除了难度筛选
 
     const favSet = new Set(this.data.favoriteKeys || []);
     filteredData = filteredData.map(dateBlock => {
@@ -369,8 +524,10 @@ Page({
       }));
       return { ...dateBlock, articles };
     });
+    const limit = this.data.displayLimit || filteredData.length;
     this.setData({
-      filteredTimelineData: filteredData
+      filteredTimelineData: filteredData,
+      displayFilteredTimelineData: filteredData.slice(0, limit)
     });
   },
 
@@ -385,13 +542,20 @@ Page({
    * 页面上拉触底事件的处理函数
    */
   onReachBottom: function () {
-
+    const full = this.data.filteredTimelineData || [];
+    const limit = this.data.displayLimit || 0;
+    const inc = this.data.displayIncrement || 6;
+    const next = Math.min(limit + inc, full.length);
+    if (next > limit) {
+      this.setData({ displayLimit: next, displayFilteredTimelineData: full.slice(0, next) });
+    }
   },
 
   /**
    * 打开轮播文章详情页面
    */
   openCarouselArticle: function (e) {
+    if (getApp().playClickSound) getApp().playClickSound();
     const { article } = e.currentTarget.dataset;
 
     // 记录阅读数量（按天+ID统计）
@@ -418,6 +582,7 @@ Page({
    * 打开短文详情页面
    */
   openArticleDetail: function (e) {
+    if (getApp().playClickSound) getApp().playClickSound();
     const { article, date, cardType } = e.currentTarget.dataset;
 
     // 记录阅读数量（按日期统计）

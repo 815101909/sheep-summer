@@ -1,26 +1,52 @@
-// pages/profile/profile.js
+const themeManager = require('../../utils/themeManager');
 Page({
   data: {
     currentAvatar: '',
     userAvatar: '',
+    userPhone: '138****8888', // 用户手机号
     userPhone: '138****8888', // 用户手机号
     userId: 'UID123456789', // 用户ID
     userName: '夏小咩', // 默认用户名
     backgroundMusicEnabled: true, // 背景音乐开关状态
     isEditingName: false, // 是否正在编辑用户名
     tempUserName: '', // 临时用户名
-    avatarList: []
+    avatarList: [],
+    themeOptions: ['跟随系统', '浅色', '深色'],
+    themeModeIndex: 0,
+    themeModeLabel: '跟随系统'
   },
 
   onLoad: function (options) {
     this.loadUserInfo();
     this.loadAvatarChoices();
+    this.loadThemeMode();
   },
 
   onShow: function () {
     // 每次显示页面时刷新数据
     this.loadUserInfo();
     this.loadAvatarChoices();
+    themeManager.applyToPage(this);
+    this.loadThemeMode();
+  },
+  
+  loadThemeMode: function () {
+    const mode = themeManager.getMode();
+    const idx = mode === 'light' ? 1 : (mode === 'dark' ? 2 : 0);
+    const label = this.data.themeOptions[idx] || '跟随系统';
+    this.setData({ themeModeIndex: idx, themeModeLabel: label });
+  },
+  
+  onThemeModeChange: function (e) {
+    const idx = Number(e.detail.value) || 0;
+    const mode = idx === 1 ? 'light' : (idx === 2 ? 'dark' : 'system');
+    this.setData({
+      themeModeIndex: idx,
+      themeModeLabel: this.data.themeOptions[idx] || '跟随系统'
+    });
+    themeManager.setMode(mode);
+    themeManager.applyToPage(this);
+    themeManager.applyTheme();
   },
 
   // 加载用户信息（资料头像来自 summeruser.avatarUrl）
@@ -29,8 +55,8 @@ Page({
     const userName = wx.getStorageSync('userName') || '夏小咩';
     const userPhone = info && info.phone && String(info.phone).trim() ? info.phone : '未绑定';
     const userId = info && (info.userId || info.openid || info._id) ? (info.userId || info.openid || info._id) : '未登录';
-    const backgroundMusicEnabled = wx.getStorageSync('backgroundMusicEnabled');
-    const bgMusicEnabled = backgroundMusicEnabled !== null ? backgroundMusicEnabled : true;
+    const app = getApp();
+    const bgMusicEnabled = app.globalData && app.globalData.bgmEnabled === false ? false : true;
 
     this.setData({
       userName: userName,
@@ -176,6 +202,7 @@ Page({
    * 选择头像
    */
   selectAvatar: function(e) {
+    if (getApp().playClickSound) getApp().playClickSound();
     const avatar = e.currentTarget.dataset.avatar; // 这里的 avatar 可能是临时链接
     
     // 找到原始链接
@@ -292,6 +319,7 @@ Page({
 
   // 取消编辑用户名
   onNameCancel: function () {
+    if (getApp().playClickSound) getApp().playClickSound();
     this.setData({
       isEditingName: false,
       tempUserName: ''
@@ -300,6 +328,7 @@ Page({
 
   // 确认编辑用户名
   onNameConfirm: function () {
+    if (getApp().playClickSound) getApp().playClickSound();
     const newName = this.data.tempUserName.trim();
     if (!newName) {
       wx.showToast({
@@ -384,10 +413,12 @@ Page({
     this.setData({
       backgroundMusicEnabled: isEnabled
     });
-    wx.setStorageSync('backgroundMusicEnabled', isEnabled);
     
     // 控制背景音乐播放/暂停
     const app = getApp();
+    if (app.globalData) {
+      app.globalData.bgmEnabled = isEnabled;
+    }
     if (isEnabled) {
         if (app.playMusic) {
             app.playMusic();
@@ -401,6 +432,7 @@ Page({
 
   // 退出登录
   onLogout: function () {
+    if (getApp().playClickSound) getApp().playClickSound();
     wx.showModal({
       title: '提示',
       content: '确定要退出登录吗？',
@@ -435,5 +467,3 @@ Page({
     });
   }
 });
-
-

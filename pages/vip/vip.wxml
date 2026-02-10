@@ -21,7 +21,7 @@
     <view class="plan-item {{selectedPlan === 'monthly' ? 'selected' : ''}}" bindtap="selectPlan" data-plan="monthly">
       <view class="plan-header">
         <text class="plan-name">月卡</text>
-        <text class="plan-price">¥9.9</text>
+        <text class="plan-price">{{plans.monthly.price}}</text>
       </view>
     </view>
 
@@ -29,7 +29,7 @@
     <view class="plan-item {{selectedPlan === 'quarterly' ? 'selected' : ''}}" bindtap="selectPlan" data-plan="quarterly">
       <view class="plan-header">
         <text class="plan-name">季卡</text>
-        <text class="plan-price">¥25.9</text>
+        <text class="plan-price">{{plans.quarterly.price}}</text>
       </view>
     </view>
 
@@ -37,7 +37,7 @@
     <view class="plan-item {{selectedPlan === 'yearly' ? 'selected' : ''}}" bindtap="selectPlan" data-plan="yearly">
       <view class="plan-header">
         <text class="plan-name">年卡</text>
-        <text class="plan-price">¥89.9</text>
+        <text class="plan-price">{{plans.yearly.price}}</text>
       </view>
     </view>
   </view>

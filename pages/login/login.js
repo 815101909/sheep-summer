@@ -305,6 +305,7 @@ Page({
 
   // 用户协议点击
   onTermsTap: function () {
+    if (getApp().playClickSound) getApp().playClickSound();
     this.setData({
       modalTitle: '绵羊时间用户服务协议',
       modalContent: this.data.agreementContent,

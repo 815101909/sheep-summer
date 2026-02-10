@@ -19,24 +19,39 @@
   width: 100%;
   height: 100vh;
   z-index: -1;
-  opacity: 0.3;
+}
+
+.background-container.dark {
+  background: #121212;
+}
+
+.background-container.dark::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 0;
 }
 
 .background-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  opacity: 0.3;
 }
 
 /* 顶部轮播区域 */
 .top-carousel {
   position: relative;
-  height: 410rpx;
+  height: 420rpx;
   width: calc(100% - 120rpx);
-  margin: 45rpx 60rpx 20rpx 60rpx;
-  border-radius: 12rpx;
+  margin: 0 60rpx 20rpx 60rpx;
   z-index: 2;
-  overflow: hidden;
+  overflow: visible;
+  top: -30rpx;
 }
 
 /* 轮播左上角斜线徽章 */
@@ -98,6 +113,270 @@
   justify-content: center;
 }
 
+.polaroid-style {
+  overflow: visible !important;
+  background: transparent;
+  box-shadow: none;
+}
+
+.carousel-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.polaroid-card {
+  width: 80%;
+  height: 100%;
+  background: #fff;
+  padding: 16rpx 16rpx 70rpx 16rpx;
+  position: absolute;
+  left: 10%;
+  top: 0;
+  box-shadow: 0 6rpx 16rpx rgba(0,0,0,0.4);
+  transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: center 80%;
+  opacity: 0;
+  border-radius: 4rpx;
+  box-sizing: border-box;
+}
+
+.polaroid-card .card-bg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 2rpx;
+}
+
+.polaroid-card .card-overlay {
+  display: none;
+}
+
+.polaroid-card .tag-badge {
+  position: absolute;
+  top: -16rpx;
+  left: -16rpx;
+  background-color: #e3d5ca;
+  color: #5e503f;
+  padding: 10rpx 20rpx;
+  border-radius: 6rpx;
+  box-shadow: 2rpx 2rpx 6rpx rgba(0,0,0,0.15);
+  transform: rotate(-8deg);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  font-size: 24rpx;
+  font-weight: bold;
+  border: 2rpx solid rgba(255,255,255,0.5);
+}
+
+.polaroid-card .badge-icon {
+  width: 32rpx;
+  height: 32rpx;
+  margin-right: 10rpx;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.badge-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.polaroid-card .gentle-icon {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  animation: none;
+}
+.polaroid-card .gentle-icon::after {
+  display: none;
+}
+
+.polaroid-card .badge-text {
+  color: #5e503f;
+  text-shadow: none;
+}
+
+.polaroid-card.active {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+  z-index: 10;
+}
+.polaroid-card.prev {
+  opacity: 0.6;
+  transform: rotate(-8deg) translateX(-60rpx) scale(0.9);
+  z-index: 5;
+}
+.polaroid-card.next {
+  opacity: 0.6;
+  transform: rotate(6deg) translateX(60rpx) scale(0.9);
+  z-index: 4;
+}
+
+.nav-btn {
+  position: absolute;
+  top: 58%;
+  transform: translateY(-50%);
+  width: 64rpx;
+  height: 64rpx;
+  background: rgba(255,255,255,0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  box-shadow: 0 4rpx 10rpx rgba(0,0,0,0.1);
+}
+.nav-btn.prev { left: -30rpx; }
+.nav-btn.next { right: -30rpx; }
+.nav-arrow {
+  font-size: 36rpx;
+  color: #a68b6c;
+  font-weight: bold;
+  margin-top: 4rpx;
+  margin-left: 2rpx;
+  font-family: monospace;
+}
+
+.trial-section {
+  position: relative;
+  height: 420rpx;
+  width: calc(100% - 120rpx);
+  margin: 40rpx 60rpx 0 60rpx;
+  z-index: 2;
+  overflow: visible !important;
+  background: transparent;
+  box-shadow: none;
+  top: -20rpx;
+}
+
+.book-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  perspective: 1000px;
+}
+
+.book-wrapper {
+  position: relative;
+  width: 540rpx;
+  height: 360rpx;
+  transform-style: preserve-3d;
+  transform: rotateY(-15deg) rotateX(10deg);
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: 18rpx 22rpx 45rpx rgba(0,0,0,0.12);
+}
+
+.book-wrapper:active {
+  transform: rotateY(-5deg) rotateX(5deg) translateY(-8rpx);
+  box-shadow: 27rpx 38rpx 60rpx rgba(0,0,0,0.15);
+}
+
+.ribbon-badge {
+  position: absolute;
+  top: -9rpx;
+  left: 10rpx;
+  width: 48rpx;
+  height: 150rpx;
+  background: #b5838d;
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  color: #fff;
+  box-shadow: 3rpx 4rpx 9rpx rgba(0,0,0,0.15);
+  padding-top: 18rpx;
+  transform-origin: top center;
+  transition: transform 0.3s ease;
+}
+
+.ribbon-badge::after {
+  content: '';
+  position: absolute;
+  bottom: -15rpx;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-left: 24rpx solid #b5838d;
+  border-right: 24rpx solid #b5838d;
+  border-bottom: 15rpx solid transparent;
+}
+
+.ribbon-icon {
+  width: 28rpx;
+  height: 28rpx;
+  margin-bottom: 10rpx;
+}
+
+.ribbon-text {
+  writing-mode: vertical-rl;
+  letter-spacing: 4rpx;
+  font-size: 20rpx;
+  font-family: 'Noto Serif SC', serif;
+  font-weight: bold;
+}
+
+.book-cover {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #fff;
+  border-radius: 4rpx 10rpx 10rpx 4rpx;
+  overflow: hidden;
+  z-index: 2;
+}
+
+.book-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.book-spine {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 36rpx;
+  height: 100%;
+  background: linear-gradient(to right, #ddd, #f0f0f0, #ccc);
+  transform-origin: left;
+  transform: rotateY(90deg);
+  border-radius: 4rpx 0 0 4rpx;
+}
+
+.book-pages-right {
+  position: absolute;
+  top: 4rpx;
+  right: 0;
+  width: 32rpx;
+  height: 352rpx;
+  background: linear-gradient(to right, #fff 0%, #f4f4f4 100%);
+  transform-origin: right;
+  transform: rotateY(90deg) translateZ(32rpx);
+  z-index: 1;
+}
+
+.empty-tip {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #444;
+  font-size: 26rpx;
+  background: rgba(255,255,255,0.6);
+  border-radius: 12rpx;
+}
 
 .card-desc {
   font-size: 28rpx;
@@ -117,6 +396,10 @@
   backdrop-filter: blur(10rpx);
   z-index: 2;
   position: relative;
+}
+.filter-container.dark {
+  background: rgba(24, 24, 24, 0.6);
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.35);
 }
 
 .difficulty-container {
@@ -344,6 +627,16 @@
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
+}
+.timeline-container.dark .date-text {
+  color: #f0f0f0;
+}
+.timeline-container.dark .day-text {
+  color: #cccccc;
+}
+.timeline-container.dark .node-date {
+  background: rgba(24, 24, 24, 0.85);
+  box-shadow: 0 3rpx 12rpx rgba(0, 0, 0, 0.35);
 }
 
 /* 时间线主轴 */

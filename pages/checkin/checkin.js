@@ -42,7 +42,8 @@ Page({
     currentAvatar: '/assets/images/小卡片默认形象.png',
     
     // 当前用户ID，用于更新形象
-    userId: '' 
+    userId: '',
+    userDocId: ''
   },
 
   onLoad: function (options) {
@@ -93,10 +94,21 @@ Page({
       if (!this.cloud) return;
       const db = this.cloud.database();
       try {
-          const userRes = await db.collection('summeruser').get();
+          let openid = wx.getStorageSync('openid');
+          if (!openid) {
+              try {
+                  const loginRes = await this.cloud.callFunction({ name: 'login', data: {} });
+                  openid = loginRes && loginRes.result && loginRes.result.openid ? loginRes.result.openid : '';
+                  if (openid) wx.setStorageSync('openid', openid);
+              } catch (_) {}
+          }
+          const userRes = openid 
+              ? await db.collection('summeruser').where({ _openid: openid }).get()
+              : await db.collection('summeruser').get();
           if (userRes.data.length > 0) {
               const user = userRes.data[0];
-              const userId = user._id;
+              const userDocId = user._id;
+              const userId = user.userId || user._id;
               const visualization = user.visualization;
               
               let currentAvatar = '/assets/images/小卡片默认形象.png';
@@ -121,6 +133,7 @@ Page({
               
               this.setData({
                   userId: userId,
+                  userDocId: userDocId,
                   currentAvatar: currentAvatar
               });
               wx.setStorageSync('currentAvatar', currentAvatar);
@@ -138,36 +151,78 @@ Page({
     const db = this.cloud.database();
     try {
         // 1. 获取用户统计数据 (此时 userId 已在 loadUserData 中获取，但为了兼容仍保留部分逻辑)
-        const userRes = await db.collection('summeruser').get();
         let checkinDays = 0;
         let totalCheckins = 0;
-
-        if (userRes.data.length > 0) {
-            checkinDays = userRes.data[0].checkinDays || 0;
-            totalCheckins = userRes.data[0].totalCheckins || 0;
+        if (this.data.userDocId) {
+            const userRes = await db.collection('summeruser').doc(this.data.userDocId).get();
+            if (userRes.data) {
+                checkinDays = userRes.data.checkinDays || 0;
+                totalCheckins = userRes.data.totalCheckins || 0;
+            }
+        } else {
+            const openid2 = wx.getStorageSync('openid') || '';
+            if (openid2) {
+                const userRes = await db.collection('summeruser').where({ _openid: openid2 }).get();
+                if (userRes.data && userRes.data.length > 0) {
+                    checkinDays = userRes.data[0].checkinDays || 0;
+                    totalCheckins = userRes.data[0].totalCheckins || 0;
+                }
+            }
         }
 
-        // 2. 获取打卡记录 (最近100条)
+        // 2. 获取本用户打卡记录 (最近100条)
+        let openid = wx.getStorageSync('openid') || '';
+        if (!openid) {
+            try {
+                const loginRes = await this.cloud.callFunction({ name: 'login', data: {} });
+                openid = loginRes && loginRes.result && loginRes.result.openid ? loginRes.result.openid : '';
+                if (openid) wx.setStorageSync('openid', openid);
+            } catch (_) {}
+        }
         const checkinRes = await db.collection('summer_checkin')
+            .where({ openid: openid })
             .orderBy('date', 'desc')
             .limit(100)
             .get();
             
         const checkinRecords = {};
-        if (checkinRes.data) {
-            checkinRes.data.forEach(item => {
+        const recordDates = new Set();
+        const listData = Array.isArray(checkinRes.data) ? checkinRes.data : [];
+        for (let i = 0; i < listData.length; i++) {
+            const item = listData[i];
+            if (item && item.date) {
                 checkinRecords[item.date] = true;
-            });
+                recordDates.add(item.date);
+            }
         }
 
-        // 3. 获取解锁形象数量
-        const unlockRes = await db.collection('summer_avatar_unlock').count();
-        const unlockedImages = unlockRes.total;
+        // 3. 获取本用户解锁形象数量
+        let unlockRes = await db.collection('summer_avatar_unlock')
+            .where({ userId: this.data.userId })
+            .count();
+        let unlockedImages = unlockRes.total;
+        if ((!unlockedImages || unlockedImages === 0) && openid) {
+            const unlockByOpenid = await db.collection('summer_avatar_unlock')
+                .where({ _openid: openid })
+                .count();
+            unlockedImages = unlockByOpenid.total;
+        }
+
+        const today = new Date();
+        let computedContinuous = 0;
+        for (let i = 0; i < 365; i++) {
+            const t = new Date(today);
+            t.setDate(today.getDate() - i);
+            const ds = formatDate(t);
+            if (recordDates.has(ds)) computedContinuous++;
+            else break;
+        }
+        const computedTotal = listData.length;
 
         this.setData({
             checkinRecords: checkinRecords,
-            checkinDays: checkinDays,
-            totalCheckins: totalCheckins,
+            checkinDays: computedContinuous || checkinDays,
+            totalCheckins: computedTotal || totalCheckins,
             unlockedImages: unlockedImages
         });
         
@@ -422,7 +477,15 @@ Page({
 
     const db = this.cloud.database();
     try {
-        const res = await db.collection('summer_avatar_unlock').get();
+        const openid = wx.getStorageSync('openid') || '';
+        let res = await db.collection('summer_avatar_unlock')
+            .where({ userId: this.data.userId })
+            .get();
+        if ((!res.data || res.data.length === 0) && openid) {
+            res = await db.collection('summer_avatar_unlock')
+                .where({ _openid: openid })
+                .get();
+        }
         // 去重
         let unlockedAvatarList = [];
         const seen = new Set();
@@ -492,13 +555,13 @@ Page({
       }
       
       // 如果没有 userId，尝试重新获取
-      if (!this.data.userId) {
+      if (!this.data.userDocId || !this.data.userId) {
           wx.showLoading({ title: '准备中...' });
           await this.loadUserData();
           wx.hideLoading();
       }
       
-      if (!this.data.userId) {
+      if (!this.data.userDocId || !this.data.userId) {
           wx.showToast({ title: '获取用户信息失败，无法保存', icon: 'none' });
           return;
       }
@@ -512,7 +575,7 @@ Page({
               saveUrl = this.data.avatarOriginalUrls[avatarUrl];
           }
 
-          await db.collection('summeruser').doc(this.data.userId).update({
+          await db.collection('summeruser').doc(this.data.userDocId).update({
               data: {
                   visualization: saveUrl
               }
