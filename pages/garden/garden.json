@@ -1,11 +1,7 @@
 {
-  "navigationBarTitleText": "夏日庭院"
+  "navigationBarTitleText": "夏日庭院",
+  "navigationBarBackgroundColor": "#f8f9fa",
+  "navigationBarTextStyle": "black",
+  "enablePullDownRefresh": false,
+  "usingComponents": {}
 }
-
-
-
-
-
-
-
-

@@ -1,0 +1,273 @@
+/* pages/museum/museum.wxss 夏日时光机 · 拍立得陈列 */
+.museum-page {
+  min-height: 100vh;
+  height: 100vh;
+  background: #faf8f3;
+  padding: 32rpx 32rpx 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.page-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  opacity: 0.3;
+}
+
+.museum-header {
+  flex-shrink: 0;
+  margin-bottom: 16rpx;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+  text-align: center;
+}
+.museum-desc {
+  font-size: 26rpx;
+  color: rgba(92, 74, 50, 0.65);
+  letter-spacing: 4rpx;
+  font-weight: 300;
+}
+
+/* 羊毛一行：与绵羊杂货铺一模一样 */
+.museum-wool-row {
+  flex-shrink: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 22rpx 28rpx;
+  margin-bottom: 24rpx;
+  background: linear-gradient(135deg, rgba(255, 252, 248, 0.95) 0%, rgba(250, 246, 238, 0.95) 100%);
+  border: 1rpx solid rgba(139, 115, 85, 0.18);
+  border-radius: 24rpx;
+  box-shadow: 0 4rpx 16rpx rgba(92, 74, 50, 0.06);
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+}
+
+.museum-wool-row .wool-icon {
+  width: 52rpx;
+  height: 52rpx;
+  flex-shrink: 0;
+}
+
+.museum-wool-row .wool-count {
+  font-size: 36rpx;
+  font-weight: 500;
+  color: #5c4a32;
+  margin-left: 14rpx;
+  flex-shrink: 0;
+}
+
+.museum-wool-row .wool-label {
+  font-size: 26rpx;
+  color: rgba(92, 74, 50, 0.7);
+  margin-left: 8rpx;
+  flex-shrink: 0;
+}
+
+.museum-wool-row .wool-topup-desc {
+  font-size: 22rpx;
+  color: rgba(92, 74, 50, 0.5);
+  margin-left: auto;
+  margin-right: 16rpx;
+  flex-shrink: 0;
+}
+
+.museum-wool-row .wool-topup-btn {
+  padding: 12rpx 22rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(135deg, #8b7355 0%, #6b5344 100%);
+  color: #fff;
+  font-size: 24rpx;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.museum-wool-row .wool-topup-btn:active {
+  opacity: 0.9;
+}
+
+/* 月份筛选 */
+.museum-filter {
+  flex-shrink: 0;
+  width: 100%;
+  margin-bottom: 20rpx;
+  position: relative;
+  z-index: 1;
+}
+.filter-scroll {
+  width: 100%;
+  white-space: nowrap;
+}
+.filter-options {
+  display: inline-flex;
+  gap: 16rpx;
+  padding: 8rpx 0;
+}
+.filter-opt {
+  display: inline-flex;
+  align-items: center;
+  padding: 12rpx 24rpx;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  color: rgba(92, 74, 50, 0.7);
+  letter-spacing: 1rpx;
+  background: rgba(255, 252, 248, 0.8);
+  border: 1rpx solid rgba(139, 115, 85, 0.15);
+}
+.filter-opt.active {
+  background: linear-gradient(135deg, #8b7355 0%, #6b5344 100%);
+  color: #fff;
+  border-color: transparent;
+}
+
+.museum-scroll {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  z-index: 1;
+}
+
+.museum-list {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 36rpx;
+  padding: 16rpx 0 80rpx;
+  width: 100%;
+}
+
+.polaroid {
+  width: 88%;
+  max-width: 620rpx;
+  background: linear-gradient(180deg, #fffefc 0%, #fefaf5 100%);
+  padding: 36rpx 32rpx 44rpx;
+  border-radius: 24rpx;
+  box-shadow: 0 12rpx 40rpx rgba(92, 74, 50, 0.1), 0 0 0 1rpx rgba(139, 115, 85, 0.08);
+  border: 2rpx solid rgba(255, 255, 255, 0.95);
+  transition: transform 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+.polaroid-scene-bg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  opacity: 0.5;
+}
+.polaroid-sit .polaroid-bg {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 50%;
+  z-index: 1;
+  background: linear-gradient(180deg, transparent 0%, rgba(255, 252, 248, 0.4) 40%, rgba(250, 246, 238, 0.75) 100%);
+  pointer-events: none;
+}
+.polaroid-sheep {
+  position: absolute;
+  right: 24rpx;
+  bottom: 100rpx;
+  width: 100rpx;
+  height: 100rpx;
+  z-index: 2;
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.polaroid:active {
+  transform: rotate(0deg) scale(0.98);
+}
+
+.polaroid-inner {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+  align-items: center;
+  text-align: center;
+}
+
+.polaroid-date {
+  font-size: 22rpx;
+  color: rgba(139, 115, 85, 0.7);
+  letter-spacing: 1rpx;
+  padding-bottom: 16rpx;
+  border-bottom: 1rpx solid rgba(139, 115, 85, 0.12);
+}
+.polaroid-meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20rpx;
+  flex-wrap: wrap;
+}
+.polaroid-duration {
+  font-size: 24rpx;
+  color: rgba(139, 115, 85, 0.75);
+  letter-spacing: 1rpx;
+}
+.polaroid-mood {
+  font-size: 24rpx;
+  color: #8b7355;
+  letter-spacing: 2rpx;
+  font-weight: 500;
+}
+
+.polaroid-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.polaroid-label {
+  font-size: 22rpx;
+  color: rgba(139, 115, 85, 0.6);
+  letter-spacing: 2rpx;
+}
+
+.polaroid-text {
+  font-size: 28rpx;
+  line-height: 1.55;
+  color: #5c4a32;
+  letter-spacing: 1rpx;
+}
+
+.museum-placeholder {
+  padding: 80rpx 32rpx;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.placeholder-text {
+  font-size: 30rpx;
+  color: rgba(92, 74, 50, 0.6);
+  letter-spacing: 3rpx;
+  line-height: 1.6;
+  display: block;
+  margin-bottom: 16rpx;
+}
+.placeholder-sub {
+  font-size: 26rpx;
+  color: rgba(92, 74, 50, 0.45);
+  letter-spacing: 2rpx;
+  line-height: 1.7;
+}

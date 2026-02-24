@@ -1,6 +1,7 @@
 {
   "pages": [
     "pages/garden/garden",
+    "pages/my-summer/my-summer",
     "pages/weekly-report/weekly-report",
     "pages/music/music",
     "pages/hoofprint/hoofprint",
@@ -12,7 +13,9 @@
     "pages/checkin/checkin",
     "pages/vip/vip",
     "pages/collection/collection",
-    "pages/service/service"
+    "pages/service/service",
+    "pages/shop/shop",
+    "pages/museum/museum"
   ],
   "darkmode": true,
   "themeLocation": "theme.json",
@@ -51,6 +54,12 @@
         "text": "盛夏蹄印",
         "iconPath": "assets/images/sheep.png",
         "selectedIconPath": "assets/images/sheep.png"
+      },
+      {
+        "pagePath": "pages/my-summer/my-summer",
+        "text": "我的夏天",
+        "iconPath": "assets/images/garden.png",
+        "selectedIconPath": "assets/images/garden.png"
       }
     ]
   }

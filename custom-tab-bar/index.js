@@ -23,24 +23,16 @@ Component({
         text: "盛夏蹄印",
         iconPath: "/assets/images/sheep.png",
         selectedIconPath: "/assets/images/sheep.png"
+      },
+      {
+        pagePath: "/pages/my-summer/my-summer",
+        text: "我的夏天",
+        iconPath: "/assets/images/我的夏天.png",
+        selectedIconPath: "/assets/images/我的夏天.png"
       }
     ]
   },
   attached() {
-    const pages = getCurrentPages();
-    if (pages.length > 0) {
-      const currentPage = pages[pages.length - 1];
-      if (currentPage && currentPage.route) {
-        const currentPath = currentPage.route;
-        if (currentPath.includes('garden')) {
-          this.setData({ selected: 0 });
-        } else if (currentPath.includes('music')) {
-          this.setData({ selected: 1 });
-        } else if (currentPath.includes('hoofprint')) {
-          this.setData({ selected: 2 });
-        }
-      }
-    }
     this.setData({ themeClass: themeManager.isDark() ? 'dark' : 'light' });
   },
   methods: {

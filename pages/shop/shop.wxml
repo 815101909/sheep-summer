@@ -1,0 +1,44 @@
+<view class="shop-page">
+  <image class="page-bg" src="/assets/images/splash-bg.png" mode="aspectFill" />
+  <view class="shop-header">
+    <text class="shop-desc">用羊毛换一点温柔小物</text>
+  </view>
+  <view class="shop-wool-row" bindtap="onTopUpWool">
+    <image class="wool-icon" src="{{woolImageUrl}}" mode="aspectFit" />
+    <text class="wool-count">{{woolCount}}</text>
+    <text class="wool-label">羊毛</text>
+    <text class="wool-topup-desc">100 羊毛</text>
+    <view class="wool-topup-btn">10元</view>
+  </view>
+  <view class="shop-filter" wx:if="{{products.length > 0}}">
+    <scroll-view class="filter-scroll" scroll-x>
+      <view class="filter-options">
+        <view class="filter-opt {{categoryFilter === '' ? 'active' : ''}}" data-cat="" bindtap="onCategoryFilter">全部</view>
+        <view class="filter-opt {{categoryFilter === item ? 'active' : ''}}" wx:for="{{categoryOptions}}" wx:key="*this" data-cat="{{item}}" bindtap="onCategoryFilter">{{item}}</view>
+      </view>
+    </scroll-view>
+  </view>
+  <view class="shop-status" wx:if="{{loading}}"><text>正在陈列…</text></view>
+  <view class="shop-status" wx:elif="{{loadError}}"><text>{{loadError}}</text></view>
+  <view class="shop-status" wx:elif="{{products.length === 0}}"><text>杂货铺还在布置中</text></view>
+  <scroll-view wx:else class="shop-scroll" scroll-y>
+    <view class="shop-list">
+      <view class="shop-item" wx:for="{{filteredProducts}}" wx:key="id" data-item="{{item}}" bindtap="onProductTap">
+        <view class="shop-item-media">
+          <image wx:if="{{item.imageUrl}}" class="shop-item-img" src="{{item.imageUrl}}" mode="aspectFill" />
+          <view wx:else class="shop-item-img shop-item-placeholder"></view>
+          <view class="shop-item-tag" wx:if="{{item.category}}">{{item.category}}</view>
+        </view>
+        <view class="shop-item-info">
+          <text class="shop-item-name">{{item.name}}</text>
+          <text class="shop-item-desc">{{item.description}}</text>
+          <view class="shop-item-price-wrap">
+            <image class="wool-icon-small" src="{{woolImageUrl}}" mode="aspectFit" />
+            <text class="shop-item-price">{{item.priceWool}}</text>
+            <text class="shop-item-unit">羊毛</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+</view>

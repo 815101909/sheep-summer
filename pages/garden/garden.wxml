@@ -1,211 +1,155 @@
-<!--pages/garden/garden.wxml-->
-<!-- 背景层 -->
-<view class="background-container {{themeClass}}">
-  <image class="background-image" src="/assets/images/splash-bg.png" mode="aspectFill" />
-</view>
+<!-- pages/hoofprint/hoofprint.wxml -->
+<view class="page">
+  <image class="page-bg" src="/assets/images/splash-bg.png" mode="aspectFill" />
 
-<!-- 用户信息区域 -->
-<view class="user-profile {{themeClass}}">
-  <!-- 用户头像和信息水平布局 -->
-  <view class="user-header">
-    <!-- 用户头像 -->
-    <view class="avatar-section">
-      <image class="user-avatar" src="{{userInfo.avatarUrl}}" mode="aspectFill" />
-    </view>
-
-  <!-- 用户信息 -->
-  <view class="user-info">
-    <view class="user-info-row" wx:if="{{!isLoggedIn}}">
-      <view class="action-btn login-btn" bindtap="quickLogin">
-        <text class="btn-text">登录一夏</text>
+  <!-- 上边空白：分组、留白、主次分明 -->
+  <view class="edge-top">
+    <view class="edge-top-inner">
+      <view class="edge-btns">
+        <view class="edge-btn-item" bindtap="onTapGuide">
+          <text class="edge-btn-icon">🌿</text>
+          <text class="edge-btn-text">放松攻略</text>
+        </view>
+        <view class="edge-btn-item" bindtap="onTapBgMusic">
+          <text class="edge-btn-icon">♪</text>
+          <text class="edge-btn-text">背景声音</text>
+        </view>
+      </view>
+      <view class="edge-live">
+        <text class="edge-live-num">{{liveWatchCount}}</text>
+        <text class="edge-live-text">人正在这里歇脚</text>
       </view>
     </view>
-    <view class="user-info-row" wx:if="{{isLoggedIn}}">
-      <text class="user-name-display">{{userInfo.name}}</text>
-      <view class="action-btn edit-btn" bindtap="editProfile">
-        <text class="btn-text">设置一夏</text>
+  </view>
+
+  <view class="frame-bg">
+    <video
+      wx:if="{{useVideoBg}}"
+      class="frame-bg2"
+      src="{{frameVideoSrc}}"
+      autoplay
+      loop
+      muted
+      show-center-play-btn="false"
+      controls="false"
+      objectFit="cover"
+    ></video>
+    <image wx:else class="frame-bg2" src="{{bg2ImageUrl}}" mode="aspectFill" />
+    <view class="frame-bg-quote-wrap" wx:if="{{bgQuoteLines.length}}">
+      <view class="frame-bg-quote-line"></view>
+      <text class="frame-bg-quote" wx:for="{{bgQuoteLines}}" wx:key="index">{{item}}</text>
+      <view class="frame-bg-quote-line-bottom"></view>
+    </view>
+  </view>
+  <!-- 坐下途中切出：小羊离开提示 -->
+  <view class="away-notice-mask" wx:if="{{showAwayNotice}}" catchtap="onDismissAwayNotice">
+    <view class="away-notice-card">
+      <text class="away-notice-text">你的伙伴夏小咩已经离开，但是可以作为音频后台运行。</text>
+    </view>
+  </view>
+  <view
+    class="bench-wrap"
+    wx:if="{{!showAwayNotice}}"
+    style="left: {{benchX}}px; top: {{benchY}}px; transform: translate(-50%, -50%) scale({{benchScale}});"
+    bindtouchstart="onBenchTouchStart"
+    catchtouchmove="onBenchTouchMove"
+    bindtouchend="onBenchTouchEnd"
+  >
+    <view class="bench-hint" wx:if="{{showBenchHint}}">可以自由拖动我的位置以及调整我的大小哦～</view>
+    <image class="bench-img" src="{{benchImageUrl}}" mode="aspectFit" />
+  </view>
+
+  <!-- 下边空白：坐下倒计时居中 + 两枚主入口 -->
+  <view class="edge-bottom">
+    <view class="edge-countdown-wrap edge-countdown-center">
+      <picker mode="selector" range="{{sitMinutesOptions}}" value="{{sitMinutesIndex}}" bindchange="onSitMinutesChange">
+        <view class="edge-sit-row edge-sit-picker-trigger">
+          <text class="edge-countdown-label">坐下</text>
+          <view class="edge-sit-mins-wrap"><text class="edge-sit-mins">{{sitMinutes}} 分钟</text><text class="edge-sit-arrow">▼</text></view>
+        </view>
+      </picker>
+      <view class="edge-sit-row edge-sit-start" bindtap="onTapSitCountdown">
+        <text class="edge-countdown-value" wx:if="{{sitCountdown}}">{{sitCountdown}}</text>
+        <text class="edge-countdown-value" wx:else>开始</text>
       </view>
     </view>
-    <text class="user-description">{{userInfo.description || '在夏日的草原上，寻找自己的生活节奏'}}</text>
-  </view>
-  </view>
-
-  <!-- 用户数据 -->
-  <view class="user-stats {{themeClass}}">
-    <view class="stat-item">
-      <text class="stat-number">{{userInfo.daysCount || 0}}</text>
-      <text class="stat-label">登录天数</text>
-    </view>
-    <view class="stat-item">
-      <text class="stat-number">{{userInfo.listenCount || 0}}</text>
-      <text class="stat-label">收听数量</text>
-    </view>
-    <view class="stat-item">
-      <text class="stat-number">{{userInfo.readCount || 0}}</text>
-      <text class="stat-label">阅读数量</text>
+    <view class="edge-bottom-cards">
+      <view class="edge-card edge-card-museum" bindtap="onTapMuseum">
+        <text class="edge-card-title">夏日时光机</text>
+      </view>
+      <view class="edge-card edge-card-flick" bindtap="onTapShop">
+        <text class="edge-card-title">绵羊杂货铺</text>
+      </view>
     </view>
   </view>
 
-  <!-- A4区域 -->
-  <view class="a4-preview-section {{themeClass}}">
-    <view class="a4-preview-container">
-      <view class="a4-preview-paper {{themeClass}}">
-        <!-- 小绵羊的打卡站 -->
-        <view class="a4-column checkin-station" hover-class="zoom" bindtap="openCheckinPage">
-          <view class="column-header">
-            <image class="column-image" src="/assets/images/日历.png" mode="aspectFit" />
-            <view class="title-section">
-              <view class="title-row">
-                <text class="column-title">小绵羊的打卡站</text>
-                <text class="separator">｜</text>
-                <text class="column-desc-inline">开启盲盒形象</text>
-              </view>
-              <view class="column-status">
-                <text class="status-text">已打卡 {{checkinDays}} 天 · 解锁形象 {{unlockedImages}} 个</text>
-              </view>
-            </view>
+  <!-- 攻略弹窗 -->
+  <view class="guide-mask" wx:if="{{showGuideModal}}" catchtap="onCloseGuideModal">
+    <view class="guide-modal" catchtap="">
+      <swiper wx:if="{{guideImages.length > 0}}" class="guide-swiper" 
+              indicator-dots="{{guideImages.length > 1}}" 
+              autoplay="{{false}}" 
+              circular="{{false}}" 
+              bindchange="onGuideSwiperChange"
+              current="{{currentGuideImageIndex}}"
+              duration="300"
+              easing-function="default"
+              skip-hidden-item-layout="{{true}}">
+        <swiper-item wx:for="{{guideImages}}" wx:key="*this">
+          <view class="guide-image-wrapper">
+            <image class="guide-image" src="{{item}}" mode="aspectFit" lazy-load="{{true}}" />
           </view>
-        </view>
+        </swiper-item>
+      </swiper>
+      <view wx:else class="guide-no-images">
+        <text class="guide-no-images-text">正在加载攻略图片...</text>
+      </view>
+      <view class="guide-close" bindtap="onCloseGuideModal">×</view>
+    </view>
+  </view>
 
-        <!-- 小绵羊的会员馆 -->
-        <view class="a4-column membership-hall" hover-class="zoom" bindtap="openVip">
-          <view class="column-header">
-            <image class="column-image" src="/assets/images/会员.png" mode="aspectFit" />
-            <view class="title-section">
-              <view class="title-row">
-                <text class="column-title">小绵羊的会员馆</text>
-                <text class="separator">｜</text>
-                <text class="column-desc-inline">解锁专属功能</text>
-              </view>
-              <view class="column-status">
-                <text class="status-text" wx:if="{{!isVip}}">还不是会员｜点击查看会员详情</text>
-                <text class="status-text" wx:if="{{isVip}}">{{vipExpiry}}｜点击查看会员详情</text>
-              </view>
-            </view>
-          </view>
-        </view>
-
-        <!-- 小绵羊的收藏库 -->
-        <view class="a4-column collection-library" hover-class="zoom" bindtap="openCollection">
-          <view class="column-header">
-            <image class="column-image" src="/assets/images/收藏.png" mode="aspectFit" />
-            <view class="title-section">
-              <view class="title-row">
-                <text class="column-title">小绵羊的收藏库</text>
-                <text class="separator">｜</text>
-                <text class="column-desc-inline">珍藏美好时光</text>
-              </view>
-              <view class="column-status">
-                <text class="status-text">随身听 {{audioCount}} 个 · 成长卡 {{cardCount}} 个</text>
-              </view>
-            </view>
-          </view>
-        </view>
+  <!-- 烦恼橡皮擦：输入模态框 -->
+  <view class="worry-modal-mask" wx:if="{{showWorryModal}}" bindtap="closeWorryModal">
+    <view class="worry-modal-content" catchtap="stopProp">
+      <image class="worry-modal-bg" src="/assets/images/splash-bg.png" mode="aspectFill" />
+      <view class="worry-modal-body">
+        <view class="worry-modal-title">把烦恼告诉小绵羊</view>
+        <textarea class="worry-input" placeholder="在这里写下你的烦恼..." bindinput="onWorryInput" value="{{worryText}}" maxlength="50"></textarea>
+        <view class="worry-modal-btn" bindtap="submitWorry">一 起 弹 走 烦 恼 吧</view>
       </view>
     </view>
   </view>
-  </view>
 
-  <!-- 悬浮形象和提示文字 -->
-  <view class="floating-character-section {{themeClass}}">
-    <!-- 提示文字 -->
-    <view class="character-tip-text">
-      <text class="tip-content">Hi~每周一上午9点，一起点击右侧夏小\n咩的形象，可以解锁每周的成长报告哦</text>
+  <!-- 烦恼橡皮擦：动画层 -->
+  <view class="worry-animation-layer" wx:if="{{isAnimating}}">
+    <view class="running-sheep-container">
+      <image class="running-sheep-image" src="/assets/images/小绵羊.png" mode="aspectFit" />
     </view>
-
-    <!-- 小卡片默认形象 - 悬浮在A4区域右上角 -->
-    <image class="floating-character" src="{{currentAvatar}}" mode="aspectFit" bindtap="onCharacterTap" />
+    <view wx:for="{{fallingChars}}" wx:key="index" class="falling-char" style="left:{{item.left}}%; font-size:{{item.size}}rpx; animation-duration:{{item.duration}}s; animation-delay:{{item.delay}}s; --bounce-dir:{{item.bounceDir}};">
+      {{item.char}}
+    </view>
+    <view class="encouraging-text" wx:if="{{showEncouragingText}}">{{encouragingText}}</view>
+    <view class="close-animation-btn" bindtap="closeAnimation">×</view>
   </view>
 
-  <!-- 设置选项 -->
-<view class="settings-section {{themeClass}}">
-  <view class="setting-item" bindtap="openAbout">
-    <image class="setting-image" src="/assets/images/关于我们.png" mode="aspectFit" />
-    <text class="setting-text">关于我们</text>
-    <text class="setting-arrow">></text>
-  </view>
-  <view class="setting-item" bindtap="openHelp">
-    <image class="setting-image" src="/assets/images/帮助中心.png" mode="aspectFit" />
-    <text class="setting-text">帮助中心</text>
-    <text class="setting-arrow">></text>
-  </view>
-</view>
-
-
-<!-- 烦恼输入模态框 -->
-<view class="custom-modal-mask" wx:if="{{showWorryModal}}" bindtap="closeWorryModal">
-  <view class="custom-modal-content worry-modal-content" catchtap="stopProp">
-    <image class="modal-bg" src="/assets/images/splash-bg.png" mode="aspectFill" />
-    <view class="modal-body">
-      <view class="modal-title">把烦恼告诉小绵羊</view>
-      <textarea class="worry-input" placeholder="在这里写下你的烦恼..." bindinput="onWorryInput" value="{{worryText}}" maxlength="50"></textarea>
-      
-      <view class="action-btn-row">
-        <view class="voice-btn-container" 
-              catchtouchstart="startRecord" 
-              catchtouchend="stopRecord"
-              hover-class="voice-btn-hover">
-          <text class="voice-icon">🎤</text>
-          <text class="voice-text">{{isRecording ? '松开' : '按住说话'}}</text>
+  <!-- 坐下10分钟完成：接力鼓励弹层（文艺治愈水彩风） -->
+  <view class="relay-mask" wx:if="{{relayModalVisible}}" catchtap="onCloseRelayModal">
+    <view class="relay-card" catchtap="">
+      <view class="relay-card-inner">
+        <text class="relay-label">上一位在这里歇脚的人留给你</text>
+        <text class="relay-message">{{relayMessage}}</text>
+        <text class="relay-label relay-label-write">写一句话给后面的人</text>
+        <textarea
+          class="relay-input"
+          placeholder="在这里写下你的鼓励～"
+          value="{{relayInputText}}"
+          bindinput="onRelayInput"
+          maxlength="120"
+        />
+        <view class="relay-actions">
+          <view class="relay-btn relay-btn-submit" bindtap="onRelaySubmit">保留给自己并传给下一位</view>
         </view>
-
-        <view class="modal-btn" bindtap="submitWorry">一 起 弹 走 烦 恼 吧</view>
       </view>
-    </view>
-  </view>
-</view>
-
-<!-- 动画层 -->
-<view class="animation-layer" wx:if="{{isAnimating}}">
-  <!-- 奔跑的小羊 -->
-  <view class="running-sheep-container">
-    <image class="running-sheep-image" src="/assets/images/小绵羊.png" mode="aspectFit" />
-  </view>
-  
-  <!-- 掉落的眼泪（文字）- 移到小羊后面或上面，这里放在小羊后面渲染，z-index控制 -->
-  <view wx:for="{{fallingChars}}" wx:key="index" class="falling-char" style="left:{{item.left}}%; font-size:{{item.size}}rpx; animation-duration:{{item.duration}}s; animation-delay:{{item.delay}}s; --bounce-dir:{{item.bounceDir}};">
-    {{item.char}}
-  </view>
-
-  <!-- 鼓励语 (独立于小羊容器，全屏居中显示) -->
-  <view class="encouraging-text" wx:if="{{showEncouragingText}}">{{encouragingText}}</view>
-
-  <!-- 关闭按钮 -->
-  <view class="close-animation-btn" bindtap="closeAnimation">×</view>
-</view>
-
-<!-- 时光胶囊提醒弹窗 -->
-<view class="custom-modal-mask" wx:if="{{showReminderModal}}" bindtap="closeReminderModal">
-  <view class="custom-modal-content reminder-modal-content" catchtap="stopProp">
-    <image class="modal-bg" src="/assets/images/splash-bg.png" mode="aspectFill" />
-    <view class="modal-body">
-      <view class="modal-title">时光胶囊开启</view>
-      <view class="modal-text">
-        <text class="modal-paragraph">{{reminderContent}}</text>
-      </view>
-      <view class="action-btn-row">
-        <view class="modal-btn" bindtap="onReminderMissed">未完成</view>
-        <view class="modal-btn" bindtap="onReminderDone">已完成</view>
-      </view>
-    </view>
-  </view>
-  </view>
-
-<!-- 关于我们自定义模态框 -->
-<view class="custom-modal-mask" wx:if="{{showAboutModal}}" bindtap="closeAboutModal">
-  <view class="custom-modal-content">
-    <!-- 模态框背景 -->
-    <image class="modal-bg" src="/assets/images/splash-bg.png" mode="aspectFill" />
-
-    <!-- 模态框内容 -->
-    <view class="modal-body">
-      <view class="modal-title">关于我们</view>
-      <view class="modal-text">
-        <text class="modal-paragraph">如同绵羊静静守望夏日，我们愿以柔软而恒久的姿态，陪伴你度过每一段时光。</text>
-        <text class="modal-paragraph">这里不追逐急促的灿烂，只向往持续生长的温暖。夏日不会落幕，因为我们相信，真正的光亮来自共同经历、相互见证的每一刻。</text>
-      </view>
-      <!-- 落款 -->
-      <view class="modal-signature">@绵羊团队</view>
     </view>
   </view>
 </view>

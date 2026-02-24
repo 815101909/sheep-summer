@@ -1,0 +1,250 @@
+/* pages/shop/shop.wxss */
+.shop-page {
+  min-height: 100vh;
+  height: 100vh;
+  background: #faf8f3;
+  padding: 32rpx 32rpx 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  position: relative;
+}
+
+.shop-page .page-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  opacity: 0.3;
+}
+
+.shop-header {
+  flex-shrink: 0;
+  margin-bottom: 16rpx;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+  text-align: center;
+}
+
+.shop-desc {
+  font-size: 26rpx;
+  color: rgba(92, 74, 50, 0.65);
+  letter-spacing: 4rpx;
+  font-weight: 300;
+}
+
+.shop-wool-row {
+  flex-shrink: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 22rpx 28rpx;
+  margin-bottom: 24rpx;
+  background: linear-gradient(135deg, rgba(255, 252, 248, 0.95) 0%, rgba(250, 246, 238, 0.95) 100%);
+  border: 1rpx solid rgba(139, 115, 85, 0.18);
+  border-radius: 24rpx;
+  box-shadow: 0 4rpx 16rpx rgba(92, 74, 50, 0.06);
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+}
+
+.shop-wool-row .wool-icon {
+  width: 52rpx;
+  height: 52rpx;
+  flex-shrink: 0;
+}
+
+.shop-wool-row .wool-count {
+  font-size: 36rpx;
+  font-weight: 500;
+  color: #5c4a32;
+  margin-left: 14rpx;
+  flex-shrink: 0;
+}
+
+.shop-wool-row .wool-label {
+  font-size: 26rpx;
+  color: rgba(92, 74, 50, 0.7);
+  margin-left: 8rpx;
+  flex-shrink: 0;
+}
+
+.shop-wool-row .wool-topup-desc {
+  font-size: 22rpx;
+  color: rgba(92, 74, 50, 0.5);
+  margin-left: auto;
+  margin-right: 16rpx;
+  flex-shrink: 0;
+}
+
+.shop-wool-row .wool-topup-btn {
+  padding: 12rpx 22rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(135deg, #8b7355 0%, #6b5344 100%);
+  color: #fff;
+  font-size: 24rpx;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.shop-filter {
+  flex-shrink: 0;
+  width: 100%;
+  margin-bottom: 20rpx;
+  z-index: 1;
+}
+
+.filter-scroll {
+  width: 100%;
+  white-space: nowrap;
+}
+
+.filter-options {
+  display: inline-block;
+  padding: 10rpx 0;
+  white-space: nowrap;
+}
+
+.filter-opt {
+  display: inline-block;
+  padding: 12rpx 24rpx;
+  margin-right: 16rpx;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  color: rgba(92, 74, 50, 0.7);
+  background: rgba(255, 252, 248, 0.8);
+  border: 1rpx solid rgba(139, 115, 85, 0.15);
+  vertical-align: middle;
+}
+
+.filter-opt.active {
+  background: linear-gradient(135deg, #8b7355 0%, #6b5344 100%);
+  color: #fff;
+  border-color: transparent;
+}
+
+.shop-status {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.shop-status text {
+  font-size: 26rpx;
+  color: rgba(92, 74, 50, 0.5);
+}
+
+.shop-scroll {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  height: 0;
+  z-index: 1;
+}
+
+.shop-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  padding-bottom: 80rpx;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.shop-item {
+  width: 48%;
+  margin-bottom: 24rpx;
+  background: linear-gradient(180deg, rgba(255, 252, 248, 0.98) 0%, rgba(250, 246, 238, 0.98) 100%);
+  border: 1rpx solid rgba(139, 115, 85, 0.1);
+  border-radius: 28rpx;
+  padding: 24rpx 20rpx 28rpx;
+  box-shadow: 0 8rpx 28rpx rgba(92, 74, 50, 0.06);
+  box-sizing: border-box;
+}
+
+.shop-item-media {
+  width: 100%;
+  height: 220rpx;
+  border-radius: 20rpx;
+  overflow: hidden;
+  position: relative;
+  background: rgba(255, 255, 255, 0.5);
+  margin-bottom: 16rpx;
+}
+
+.shop-item-img,
+.shop-item-placeholder {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.shop-item-placeholder {
+  background: rgba(250, 246, 238, 0.6);
+}
+
+.shop-item-tag {
+  position: absolute;
+  left: 12rpx;
+  top: 12rpx;
+  padding: 8rpx 14rpx;
+  border-radius: 999rpx;
+  font-size: 20rpx;
+  color: rgba(92, 74, 50, 0.75);
+  background: rgba(255, 252, 248, 0.9);
+  border: 1rpx solid rgba(139, 115, 85, 0.12);
+}
+
+.shop-item-info {
+  display: block;
+}
+
+.shop-item-name {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #5c4a32;
+  letter-spacing: 2rpx;
+  margin-bottom: 8rpx;
+}
+
+.shop-item-desc {
+  display: block;
+  font-size: 24rpx;
+  color: rgba(92, 74, 50, 0.55);
+  line-height: 1.5;
+  margin-bottom: 12rpx;
+  min-height: 68rpx;
+}
+
+.shop-item-price-wrap {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.wool-icon-small {
+  width: 24rpx;
+  height: 24rpx;
+  margin-right: 6rpx;
+}
+
+.shop-item-price {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #8b7355;
+}
+
+.shop-item-unit {
+  font-size: 22rpx;
+  color: rgba(92, 74, 50, 0.5);
+  margin-left: 4rpx;
+}

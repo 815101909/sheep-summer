@@ -1,0 +1,50 @@
+<!-- pages/museum/museum.wxml 夏日时光机：坐下的次数，拍立得陈列 -->
+<view class="museum-page">
+  <image class="page-bg" src="/assets/images/splash-bg.png" mode="aspectFill" />
+  <view class="museum-header">
+    <text class="museum-desc">每一次坐下，都是一张拍立得</text>
+  </view>
+  <view class="museum-wool-row" bindtap="onTopUpWool">
+    <image class="wool-icon" src="{{woolImageUrl}}" mode="aspectFit" />
+    <text class="wool-count">{{woolCount}}</text>
+    <text class="wool-label">羊毛</text>
+    <text class="wool-topup-desc">100 羊毛</text>
+    <view class="wool-topup-btn">10元</view>
+  </view>
+  <view class="museum-filter" wx:if="{{records.length > 0}}">
+    <scroll-view class="filter-scroll" scroll-x>
+      <view class="filter-options">
+        <view class="filter-opt {{monthFilter === '' ? 'active' : ''}}" data-month="" bindtap="onMonthFilter">全部</view>
+        <view class="filter-opt {{monthFilter === item ? 'active' : ''}}" wx:for="{{monthOptions}}" wx:key="*this" data-month="{{item}}" bindtap="onMonthFilter">{{item}}</view>
+      </view>
+    </scroll-view>
+  </view>
+  <scroll-view wx:if="{{records.length > 0}}" class="museum-scroll" scroll-y>
+    <view class="museum-list">
+      <view class="polaroid polaroid-sit" wx:for="{{filteredRecords}}" wx:key="id" style="transform: rotate({{index % 2 === 0 ? '-1.2' : '1.2'}}deg);">
+        <image class="polaroid-scene-bg" src="/assets/images/bg2.png" mode="aspectFill" />
+        <view class="polaroid-bg"></view>
+        <image class="polaroid-sheep" src="/assets/images/小绵羊.png" mode="aspectFit" />
+        <view class="polaroid-inner">
+          <text class="polaroid-date">{{item.date}}</text>
+          <view class="polaroid-meta">
+            <text class="polaroid-duration">坐了 {{item.durationMinutes || 10}} 分钟</text>
+            <text class="polaroid-mood">{{item.moodLabel || '放松'}}</text>
+          </view>
+          <view class="polaroid-section">
+            <text class="polaroid-label">收到的鼓励</text>
+            <text class="polaroid-text">{{item.received || '—'}}</text>
+          </view>
+          <view class="polaroid-section">
+            <text class="polaroid-label">写给下一位</text>
+            <text class="polaroid-text">{{item.myMessage || '（还没写下呢）'}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+  <view class="museum-placeholder" wx:else>
+    <text class="placeholder-text">还没有坐下记录</text>
+    <text class="placeholder-sub">去长凳坐满一段时间，收获你的第一张拍立得吧</text>
+  </view>
+</view>
