@@ -19,6 +19,9 @@
   position: relative;
   z-index: 1;
   padding: 20rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 /* 确保内容区域有良好的可读性 */
@@ -33,6 +36,7 @@
 .a4-container {
   display: flex;
   justify-content: center;
+  width: 100%;
 }
 
 .a4-paper {
@@ -64,9 +68,10 @@
 .plans-section {
   margin-bottom: 40rpx;
   display: flex;
-  justify-content: space-around;
+  justify-content: center;
   align-items: stretch;
   gap: 20rpx;
+  width: 100%;
 }
 
 .section-title {
@@ -117,11 +122,20 @@
   color: #667eea;
 }
 
+.plan-desc {
+  font-size: 28rpx;
+  color: #666;
+  text-align: center;
+  margin-top: 10rpx;
+}
 
 /* 操作区域 */
 .action-section {
   margin-top: 40rpx;
   text-align: center;
+  width: 100%;
+  display: flex;
+  justify-content: center;
 }
 
 .subscribe-btn {
@@ -131,7 +145,7 @@
   font-size: 32rpx;
   font-weight: bold;
   border: none;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
@@ -156,6 +170,10 @@
   margin-top: 60rpx;
   padding: 0 20rpx;
   margin-bottom: 40rpx;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .section-title {
@@ -168,6 +186,7 @@
   padding: 8rpx 20rpx;
   border-radius: 20rpx;
   width: auto;
+  align-self: center;
 }
 
 .activation-box {

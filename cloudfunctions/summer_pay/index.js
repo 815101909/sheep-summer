@@ -86,7 +86,8 @@ exports.main = async (event, context) => {
     }
     const planDoc = planRes.data[0];
     let priceCents = planDoc.priceCents;
-    if (typeof priceCents === 'number' && priceCents < 100) {
+    // 将priceCents直接当作元处理，自动乘以100转换为分
+    if (typeof priceCents === 'number') {
       priceCents = Math.round(priceCents * 100);
     }
     const durationDays = planDoc.durationDays || 0;
@@ -289,7 +290,8 @@ exports.updateMemberOrder = async (event, context) => {
 
 exports.getPlans = async (event, context) => {
   try {
-    const res = await db.collection('summer_vip_plans').where({ status: true }).orderBy('displayOrder', 'asc').get();
+    // 只返回年费套餐
+    const res = await db.collection('summer_vip_plans').where({ planId: 'yearly', status: true }).get();
     return { success: true, data: res.data || [] };
   } catch (error) {
     return { success: false, errmsg: error.message || '获取套餐失败' };
@@ -305,7 +307,11 @@ function generateMiniProgramPayParams(prepayId, config) {
   const packageStr = `prepay_id=${prepayId}`;
   
   // 构建签名字符串
-  const signStr = `${config.appid}\n${timestamp}\n${nonceStr}\n${packageStr}\n`;
+  const signStr = `${config.appid}
+${timestamp}
+${nonceStr}
+${packageStr}
+`;
   
   // 使用商户私钥进行RSA签名
   const privateKey = fs.readFileSync(__dirname + '/apiclient_key.pem', 'utf8');

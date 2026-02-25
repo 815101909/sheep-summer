@@ -22,80 +22,64 @@
       <text class="date-range">{{weekRangeText}}</text>
     </view>
 
-    <!-- 核心数据网格 -->
-    <view class="stats-grid">
-      <!-- 登录天数 -->
-      <view class="stat-box login-box animate-item">
-        <view class="stat-icon-bg">
-          <image class="stat-icon" src="/assets/images/日历.png" mode="aspectFit" />
+    <!-- 第一块：行为数据 -->
+    <view class="report-section animate-item">
+      <view class="section-title-box">
+        <text class="section-title">行为数据</text>
+        <view class="title-line"></view>
+      </view>
+      <view class="stats-list">
+        <view class="stat-item">
+          <text class="stat-label">本周坐下</text>
+          <text class="stat-value">{{focusCountThisWeek}}</text>
+          <text class="stat-unit">次</text>
         </view>
-        <view class="stat-content">
-          <text class="stat-val">{{loginDaysThisWeek}}<text class="stat-unit">天</text></text>
-          <text class="stat-name">陪伴时光</text>
+        <view class="stat-item">
+          <text class="stat-label">贡献里程</text>
+          <text class="stat-value">{{weeklyContributionKm}}</text>
+          <text class="stat-unit">公里</text>
+        </view>
+        <view class="stat-item">
+          <text class="stat-label">连续天数</text>
+          <text class="stat-value">{{streakDays}}</text>
+          <text class="stat-unit">天</text>
+        </view>
+        <view class="stat-hint">
+          你超过了 <text class="highlight">{{surpassPercent}}%</text> 的同行者
         </view>
       </view>
+    </view>
 
-      <!-- 收听数量 -->
-      <view class="stat-box music-box animate-item">
-        <view class="stat-icon-bg">
-          <image class="stat-icon" src="/assets/images/music.png" mode="aspectFit" />
-        </view>
-        <view class="stat-content">
-          <text class="stat-val">{{listenedCountThisWeek}}<text class="stat-unit">首</text></text>
-          <text class="stat-name">收听治愈</text>
-        </view>
+    <!-- 第二块：集体进度 -->
+    <view class="report-section animate-item">
+      <view class="section-title-box">
+        <text class="section-title">集体进度</text>
+        <view class="title-line"></view>
       </view>
-
-      <!-- 阅读数量 -->
-      <view class="stat-box read-box animate-item">
-        <view class="stat-icon-bg">
-          <view class="stat-css-icon icon-read-book"></view>
-        </view>
-        <view class="stat-content">
-          <text class="stat-val">{{readCountThisWeek}}<text class="stat-unit">篇</text></text>
-          <text class="stat-name">阅读成长</text>
-        </view>
+      <view class="stats-list">
+        <view class="bullet-item">本周集体前进 <text class="highlight">{{weeklyCollectiveKm}}</text> 公里</view>
+        <view class="bullet-item">我们正在向 <text class="highlight">{{currentDirection}}</text> 前进</view>
+        <view class="bullet-item">当前距离起点已有 <text class="highlight">{{totalKm}}</text> 公里</view>
       </view>
+    </view>
 
-      <!-- 累计解锁 (替换勋章) -->
-      <view class="stat-box medal-box animate-item">
-        <view class="stat-icon-bg">
-          <image class="stat-icon" src="/assets/images/盲盒.png" mode="aspectFit" />
-        </view>
-        <view class="stat-content">
-          <text class="stat-val">{{unlockedTotal}}<text class="stat-unit">个</text></text>
-          <text class="stat-name">累计解锁</text>
-        </view>
+    <!-- 第三块：个人意义 -->
+    <view class="report-section animate-item">
+      <view class="section-title-box">
+        <text class="section-title">个人意义</text>
+        <view class="title-line"></view>
+      </view>
+      <view class="meaning-content">
+        <text class="meaning-text">你的选择改变了轨迹。</text>
+        <text class="meaning-sub">有 <text class="highlight">{{decisionKm}}</text> 公里，是你决定的方向。</text>
       </view>
     </view>
 
     <!-- 总结信笺 -->
     <view class="summary-paper animate-item">
-      <view class="paper-line"></view>
-      <view class="paper-line"></view>
-      <view class="paper-line"></view>
-      
-      <view class="summary-content">
-        <view class="summary-paragraph">
-          <view class="css-icon icon-time"></view>
-          <text>这一周，我们一起度过了 {{loginDaysThisWeek}} 天的夏日时光。你沉浸在 {{listenedCountThisWeek}} 首旋律中，也在 {{readCountThisWeek}} 篇卡片里寻找力量。</text>
-        </view>
-        <view class="summary-paragraph" wx:if="{{longestSolitudeNote}}">
-          <view class="css-icon icon-note"></view>
-          <text>你在{{longestSolitudeDate}}留下了本周最长的独处心语：“{{longestSolitudeNote}}”。愿这片净土能永远守护你的内心宁静。</text>
-        </view>
-        <view class="summary-paragraph" wx:if="{{maxEnergyLevel > 0}}">
-          <view class="css-icon icon-energy"></view>
-          <text>本周能量值最高的一天是{{maxEnergyDate}}，达到了 {{maxEnergyLevel}} 星状态。愿你的每一天都充满活力！</text>
-        </view>
-        <view class="summary-paragraph" wx:if="{{unlockedTotal > 0}}">
-          <view class="css-icon icon-medal"></view>
-          <text>截止目前，你已解锁 {{unlockedTotal}} 个夏日形象，这是成长的印记。</text>
-        </view>
-        <view class="summary-footer">
-          <text class="footer-text">—— 你的夏小咩</text>
-          <image class="stamp" src="/assets/images/小绵羊.png" mode="aspectFit" />
-        </view>
+      <view class="summary-footer">
+        <text class="footer-text">—— 你的夏小咩</text>
+        <image class="stamp" src="/assets/images/小绵羊.png" mode="aspectFit" />
       </view>
     </view>
 

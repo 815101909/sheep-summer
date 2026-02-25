@@ -48,10 +48,15 @@ App({
         console.error('云能力初始化失败', err)
       })
 
-      // 保留默认的 init，防止其他组件依赖
-      wx.cloud.init({
-        traceUser: true,
-      });
+      // 保留默认的 init，防止其他组件依赖；支持从本地存储读取 envId
+      try {
+        const envId = wx.getStorageSync('SUMMER_CLOUD_ENV') || '';
+        const initOptions = { traceUser: true };
+        if (envId) initOptions.env = envId;
+        wx.cloud.init(initOptions);
+      } catch (_) {
+        wx.cloud.init({ traceUser: true });
+      }
     }
     themeManager.init();
   },

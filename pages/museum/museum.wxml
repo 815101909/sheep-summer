@@ -22,7 +22,7 @@
   <scroll-view wx:if="{{records.length > 0}}" class="museum-scroll" scroll-y>
     <view class="museum-list">
       <view class="polaroid polaroid-sit" wx:for="{{filteredRecords}}" wx:key="id" style="transform: rotate({{index % 2 === 0 ? '-1.2' : '1.2'}}deg);">
-        <image class="polaroid-scene-bg" src="/assets/images/bg2.png" mode="aspectFill" />
+        <image class="polaroid-scene-bg" src="{{polaroidBgUrl}}" mode="aspectFill" />
         <view class="polaroid-bg"></view>
         <image class="polaroid-sheep" src="/assets/images/小绵羊.png" mode="aspectFit" />
         <view class="polaroid-inner">

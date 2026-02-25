@@ -9,31 +9,31 @@
   <image class="background-image" src="/assets/images/splash-bg.png" mode="aspectFill" />
 </view>
 
-<!-- 侧边栏风格选择 -->
-<view class="sidebar" wx:if="{{!isSmallCard}}">
+<!-- 侧边栏风格选择（仅正常入口显示，从盛夏蹄印单站入口进入时隐藏） -->
+<view class="sidebar" wx:if="{{!isSmallCard && !singleStationMode}}">
   <view class="mode-selector">
-    <view class="mode-btn {{currentStyleIndex === 0 ? 'active main-active' : ''}}" bindtap="switchStyle" data-index="0">
+    <view wx:if="{{!singleStationMode || currentStyleIndex === 0}}" class="mode-btn {{currentStyleIndex === 0 ? 'active main-active' : ''}}" bindtap="switchStyle" data-index="0">
       <!-- 主体式图片 -->
       <view class="style-image-container {{currentStyleIndex === 0 ? 'visible' : ''}}">
         <image class="style-image" src="{{currentStyleImage}}" mode="aspectFit" />
       </view>
       <text class="mode-text">充电站</text>
     </view>
-    <view class="mode-btn {{currentStyleIndex === 1 ? 'active qa-active' : ''}}" bindtap="switchStyle" data-index="1">
+    <view wx:if="{{!singleStationMode || currentStyleIndex === 1}}" class="mode-btn {{currentStyleIndex === 1 ? 'active qa-active' : ''}}" bindtap="switchStyle" data-index="1">
       <!-- 问答式图片 -->
       <view class="style-image-container {{currentStyleIndex === 1 ? 'visible' : ''}}">
         <image class="style-image" src="{{currentStyleImage}}" mode="aspectFit" />
       </view>
       <text class="mode-text">补给站</text>
     </view>
-    <view class="mode-btn {{currentStyleIndex === 2 ? 'active inspire-active' : ''}}" bindtap="switchStyle" data-index="2">
+    <view wx:if="{{!singleStationMode || currentStyleIndex === 2}}" class="mode-btn {{currentStyleIndex === 2 ? 'active inspire-active' : ''}}" bindtap="switchStyle" data-index="2">
       <!-- 加油式图片 -->
       <view class="style-image-container {{currentStyleIndex === 2 ? 'visible' : ''}}">
         <image class="style-image" src="{{currentStyleImage}}" mode="aspectFit" />
       </view>
       <text class="mode-text">净土站</text>
     </view>
-    <view class="mode-btn {{currentStyleIndex === 3 ? 'active fashion-active' : ''}}" bindtap="switchStyle" data-index="3">
+    <view wx:if="{{!singleStationMode || currentStyleIndex === 3}}" class="mode-btn {{currentStyleIndex === 3 ? 'active fashion-active' : ''}}" bindtap="switchStyle" data-index="3">
       <!-- 时光站图片 -->
       <view class="style-image-container {{currentStyleIndex === 3 ? 'visible' : ''}}">
         <image class="style-image" src="{{currentStyleImage}}" mode="aspectFit" />
@@ -42,19 +42,6 @@
     </view>
   </view>
 </view>
-
-<!-- 操作按钮区域 -->
-  <view class="action-buttons" wx:if="{{!isSmallCard}}">
-    <view class="action-btn font-btn" bindtap="toggleFontSize">
-      <text class="action-text">Aa</text>
-    </view>
-    <view class="action-btn favorite-btn {{isFavorited ? 'favorited' : ''}}" bindtap="toggleFavorite">
-      <view class="css-heart {{isFavorited ? 'filled' : ''}}"></view>
-    </view>
-    <view class="action-btn print-btn" bindtap="goToPrint">
-      <view class="css-print"></view>
-    </view>
-  </view>
 
 <!-- 主内容区域 -->
 <view class="main-content {{themeClass}} {{isSmallCard ? 'a4-mode' : ''}}">

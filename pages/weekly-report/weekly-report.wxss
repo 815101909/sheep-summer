@@ -163,174 +163,121 @@
   background: rgba(46, 139, 87, 0.15);
 }
 
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12rpx;
+/* 报告章节通用样式 */
+.report-section {
+  margin-bottom: 60rpx;
+  padding: 0 10rpx;
 }
 
-.stat-box {
+.section-title-box {
+  margin-bottom: 30rpx;
   display: flex;
   align-items: center;
   gap: 20rpx;
-  padding: 12rpx;
-  border-radius: 24rpx;
-  transition: all 0.2s;
 }
 
-.stat-box:active {
-  transform: scale(0.98);
+.section-title {
+  font-size: 28rpx;
+  color: #333;
+  font-weight: 400;
+  letter-spacing: 4rpx;
 }
 
-.login-box { background: #e8f5e9; }
-.music-box { background: #e3f2fd; }
-.read-box { background: #fff3e0; }
-.energy-box { background: #fffde7; }
-.solitude-clean-box { background: #e0f7fa; }
-.solitude-keep-box { background: #fce4ec; }
-.medal-box { background: #f3e5f5; }
-
-.stat-icon-bg {
-  width: 80rpx;
-  height: 80rpx;
-  border-radius: 20rpx;
-  background: rgba(255,255,255,0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.title-line {
+  flex: 1;
+  height: 1rpx;
+  background: #eee;
 }
 
-.stat-icon {
-  width: 48rpx;
-  height: 48rpx;
-}
-
-.stat-content {
+.stats-list {
   display: flex;
   flex-direction: column;
+  gap: 24rpx;
 }
 
-.stat-val {
+.stat-item {
+  display: flex;
+  align-items: baseline;
+  gap: 16rpx;
+}
+
+.stat-label {
+  font-size: 24rpx;
+  color: #999;
+  font-weight: 300;
+  width: 120rpx;
+}
+
+.stat-value {
   font-size: 40rpx;
-  font-weight: 800;
-  color: #333;
-  line-height: 1;
-  margin-bottom: 6rpx;
+  color: #222;
+  font-weight: 200;
 }
 
 .stat-unit {
-  font-size: 24rpx;
-  font-weight: normal;
-  color: #666;
-  margin-left: 4rpx;
+  font-size: 20rpx;
+  color: #bbb;
 }
 
-.stat-name {
+.stat-hint {
+  margin-top: 10rpx;
   font-size: 22rpx;
-  color: #777;
+  color: #aaa;
+  font-weight: 300;
+  font-style: italic;
+}
+
+.highlight {
+  color: #333;
+  font-weight: 400;
+  margin: 0 4rpx;
+}
+
+.bullet-item {
+  font-size: 24rpx;
+  color: #666;
+  font-weight: 300;
+  position: relative;
+  padding-left: 30rpx;
+}
+
+.bullet-item::before {
+  content: '·';
+  position: absolute;
+  left: 0;
+  font-weight: bold;
+}
+
+.meaning-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.meaning-text {
+  font-size: 26rpx;
+  color: #444;
+  font-weight: 300;
+  letter-spacing: 2rpx;
+}
+
+.meaning-sub {
+  font-size: 24rpx;
+  color: #888;
+  font-weight: 300;
 }
 
 .summary-paper {
   position: relative;
-  background: #fffdf5;
-  border: 2rpx dashed #e0e0e0;
-  border-radius: 20rpx;
-  padding: 16rpx;
-  margin-top: 20rpx;
-}
-
-.paper-line {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 2rpx;
-  background: repeating-linear-gradient(to right, #f0f0f0 0, #f0f0f0 10rpx, transparent 10rpx, transparent 20rpx);
-}
-.paper-line:nth-child(1) { top: 30%; }
-.paper-line:nth-child(2) { top: 60%; }
-.paper-line:nth-child(3) { top: 90%; }
-
-.summary-content {
-  position: relative;
-  z-index: 2;
-  font-size: 28rpx;
-  color: #555;
-  line-height: 1.8;
-  text-align: justify;
-}
-.report-card.dark .summary-content {
-  color: #333;
-}
-
-.summary-paragraph { margin-bottom: 8rpx; }
-
-.stat-css-icon {
-  display: inline-block;
-}
-
-.icon-read-book {
-  width: 36rpx;
-  height: 44rpx;
-  background-color: #795548;
-  border-radius: 4rpx 8rpx 8rpx 4rpx;
-  position: relative;
-  box-shadow: inset 6rpx 0 0 rgba(0,0,0,0.15); /* 书脊阴影 */
-}
-
-.icon-read-book::after {
-  content: '';
-  position: absolute;
-  top: 8rpx;
-  left: 10rpx;
-  right: 6rpx;
-  height: 4rpx;
-  background: rgba(255,255,255,0.4);
-  box-shadow: 0 10rpx 0 rgba(255,255,255,0.4), 0 20rpx 0 rgba(255,255,255,0.4);
-}
-
-.css-icon {
-  display: inline-block;
-  width: 20rpx;
-  height: 20rpx;
-  margin-right: 14rpx;
-  vertical-align: middle;
-  position: relative;
-  top: -2rpx;
-}
-
-.icon-time {
-  background-color: #4caf50;
-  border-radius: 50%;
-  box-shadow: 0 0 0 4rpx rgba(76, 175, 80, 0.25);
-}
-
-.icon-note {
-  background-color: #ff80ab;
-  border-radius: 4rpx 12rpx 4rpx 12rpx;
-  transform: rotate(-10deg);
-}
-
-.icon-energy {
-  background-color: #fbc02d;
-  border-radius: 2rpx;
-  transform: rotate(45deg);
-  box-shadow: 0 0 8rpx rgba(251, 192, 45, 0.4);
-}
-
-.icon-medal {
-  background-color: #ab47bc;
-  border-radius: 50%;
-  border: 4rpx solid #e1bee7;
-  box-sizing: border-box;
+  margin-top: 40rpx;
+  padding-bottom: 60rpx;
 }
 
 .summary-footer {
-  margin-top: 8rpx;
-  text-align: right;
-  font-size: 26rpx;
-  color: #888;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
   position: relative;
-  padding-right: 20rpx;
 }
 .report-card.dark .summary-footer {
   color: #666;
@@ -351,7 +298,8 @@
 }
 
 .footer-actions {
-  margin-top: 8rpx;
+  margin-top: -32rpx;
+  padding-bottom: 80rpx; /* 增加底部内边距，使按钮上移并远离系统底栏 */
 }
 
 .share-btn {

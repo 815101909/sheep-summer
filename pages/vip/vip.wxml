@@ -8,37 +8,21 @@
   <view class="a4-section">
     <view class="a4-container">
       <view class="a4-paper">
-        <!-- 会员宣传图 -->
+        <!-- 夏天持有者宣传图 -->
         <image class="vip-promo-image" src="/assets/images/夏会员图.png" mode="scaleToFill" />
       </view>
     </view>
   </view>
 
-  <!-- 会员套餐选择 -->
+  <!-- 夏天持有者套餐 -->
   <view class="plans-section">
-
-    <!-- 月卡 -->
-    <view class="plan-item {{selectedPlan === 'monthly' ? 'selected' : ''}}" bindtap="selectPlan" data-plan="monthly">
-      <view class="plan-header">
-        <text class="plan-name">月卡</text>
-        <text class="plan-price">{{plans.monthly.price}}</text>
-      </view>
-    </view>
-
-    <!-- 季卡 -->
-    <view class="plan-item {{selectedPlan === 'quarterly' ? 'selected' : ''}}" bindtap="selectPlan" data-plan="quarterly">
-      <view class="plan-header">
-        <text class="plan-name">季卡</text>
-        <text class="plan-price">{{plans.quarterly.price}}</text>
-      </view>
-    </view>
-
-    <!-- 年卡 -->
+    <!-- 年费套餐 -->
     <view class="plan-item {{selectedPlan === 'yearly' ? 'selected' : ''}}" bindtap="selectPlan" data-plan="yearly">
       <view class="plan-header">
-        <text class="plan-name">年卡</text>
+        <text class="plan-name">夏天持有者</text>
         <text class="plan-price">{{plans.yearly.price}}</text>
       </view>
+      <view class="plan-desc">一整年的夏日时光</view>
     </view>
   </view>
 
@@ -47,7 +31,7 @@
     <button class="subscribe-btn {{selectedPlan ? 'active' : 'disabled'}}"
             bindtap="subscribe"
             disabled="{{!selectedPlan}}">
-      立即开通
+      成为夏天持有者
     </button>
   </view>
 

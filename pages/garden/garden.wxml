@@ -10,9 +10,15 @@
           <text class="edge-btn-icon">🌿</text>
           <text class="edge-btn-text">放松攻略</text>
         </view>
-        <view class="edge-btn-item" bindtap="onTapBgMusic">
+        <view class="edge-btn-item bgm-trigger" bindtap="toggleBgMusicDropdown">
           <text class="edge-btn-icon">♪</text>
-          <text class="edge-btn-text">背景声音</text>
+          <text class="edge-btn-text">{{ambientName || '背景声音'}}</text>
+          <view wx:if="{{showBgMusicDropdown}}" class="bgm-dropdown-list" catchtap="stopProp">
+            <view class="bgm-dropdown-item" data-name="海浪" data-fid="cloud://cloud1-1gsyt78b92c539ef.636c-cloud1-1gsyt78b92c539ef-1370520707/mianyang/bgm/海浪.mp3" bindtap="onSelectBgMusic">海浪</view>
+            <view class="bgm-dropdown-item" data-name="鸟鸣" data-fid="cloud://cloud1-1gsyt78b92c539ef.636c-cloud1-1gsyt78b92c539ef-1370520707/mianyang/bgm/鸟鸣.mp3" bindtap="onSelectBgMusic">鸟鸣</view>
+            <view class="bgm-dropdown-item" data-name="下雨" data-fid="cloud://cloud1-1gsyt78b92c539ef.636c-cloud1-1gsyt78b92c539ef-1370520707/mianyang/bgm/下雨.mp3" bindtap="onSelectBgMusic">下雨</view>
+            <view class="bgm-dropdown-item danger" data-close="1" bindtap="onSelectBgMusic">关闭背景声音</view>
+          </view>
         </view>
       </view>
       <view class="edge-live">
@@ -134,7 +140,7 @@
 
   <!-- 坐下10分钟完成：接力鼓励弹层（文艺治愈水彩风） -->
   <view class="relay-mask" wx:if="{{relayModalVisible}}" catchtap="onCloseRelayModal">
-    <view class="relay-card" catchtap="">
+    <view class="relay-card" catchtap="stopProp">
       <view class="relay-card-inner">
         <text class="relay-label">上一位在这里歇脚的人留给你</text>
         <text class="relay-message">{{relayMessage}}</text>

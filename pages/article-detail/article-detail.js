@@ -155,6 +155,7 @@ Page({
     timeCapsuleContent: '',
     timeCapsules: [],
     reminderTicker: null,
+    singleStationMode: false, // 是否从盛夏蹄印单站入口进入
     article: {
       id: '',
       title: '',
@@ -182,12 +183,24 @@ Page({
    * 生命周期函数--监听页面加载
    */
   onLoad: function (options) {
-    const { articleId, isSmallCard } = options;
+    const { articleId, isSmallCard, styleIndex, singleStation } = options || {};
+
+    const isSmall = isSmallCard === 'true';
+    const singleMode = !isSmall && singleStation === '1';
+    let nextStyleIndex = this.data.currentStyleIndex;
+    if (!isSmall && styleIndex !== undefined) {
+      const idx = parseInt(styleIndex, 10);
+      if (!isNaN(idx) && idx >= 0 && idx <= 3) {
+        nextStyleIndex = idx;
+      }
+    }
 
     this.setData({
-      isSmallCard: isSmallCard === 'true'
+      isSmallCard: isSmall,
+      singleStationMode: singleMode,
+      currentStyleIndex: nextStyleIndex,
+      currentStyleImage: this.getStyleImage(nextStyleIndex)
     });
-    this.setData({ currentStyleImage: this.getStyleImage(this.data.currentStyleIndex) });
 
     if (articleId) {
       this.loadArticleDetail(articleId);
@@ -2346,6 +2359,13 @@ Page({
   switchStyle: function (e) {
     getApp().playClickSound && getApp().playClickSound();
     const styleIndex = parseInt(e.currentTarget.dataset.index);
+    if (this.data.singleStationMode && styleIndex !== this.data.currentStyleIndex) {
+      wx.showToast({
+        title: '从盛夏蹄印进入，本页仅开放这一小站',
+        icon: 'none'
+      });
+      return;
+    }
     const requiresVip = this.data.article && this.data.article.isCarousel === false;
     const isVip = this.isVipValid();
     if (requiresVip && !isVip && styleIndex !== 0) {

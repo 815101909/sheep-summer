@@ -33,7 +33,8 @@ Page({
     monthOptions: [],
     monthFilter: '',
     woolCount: 0,
-    woolImageUrl: '/assets/images/羊毛.webp'
+    woolImageUrl: '',
+    polaroidBgUrl: ''
   },
   onLoad(options) {
     const raw = wx.getStorageSync('benchSitRecords') || [];
@@ -79,19 +80,29 @@ Page({
   loadCloudImageUrls: async function() {
     const cloud = getApp().cloud || wx.cloud;
     const woolCloudPath = 'cloud://cloud1-1gsyt78b92c539ef.636c-cloud1-1gsyt78b92c539ef-1370520707/mianyang/羊毛.webp';
+    const bg2CloudPath = 'cloud://cloud1-1gsyt78b92c539ef.636c-cloud1-1gsyt78b92c539ef-1370520707/mianyang/bg2.png';
     
     try {
       const result = await cloud.getTempFileURL({
-        fileList: [woolCloudPath]
+        fileList: [woolCloudPath, bg2CloudPath]
       });
       
-      if (result.fileList && result.fileList[0] && result.fileList[0].status === 0) {
-        this.setData({
-          woolImageUrl: result.fileList[0].tempFileURL
-        });
+      const processedResult = {};
+      result.fileList.forEach((file, index) => {
+        if (file.status === 0) {
+          if (index === 0) {
+            processedResult.woolImageUrl = file.tempFileURL;
+          } else if (index === 1) {
+            processedResult.polaroidBgUrl = file.tempFileURL;
+          }
+        }
+      });
+      
+      if (Object.keys(processedResult).length > 0) {
+        this.setData(processedResult);
       }
     } catch (error) {
-      console.error('获取羊毛图片链接失败:', error);
+      console.error('获取云存储图片链接失败:', error);
     }
   },
   

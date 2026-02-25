@@ -88,7 +88,12 @@ Page({
     
     // 放松攻略图片数组
     guideImages: [],
-    currentGuideImageIndex: 0
+    currentGuideImageIndex: 0,
+    
+    // 背景声音下拉
+    showBgMusicDropdown: false,
+    ambientName: '',
+    ambientPlaying: false
   },
 
   /**
@@ -133,14 +138,129 @@ Page({
     this.setData({
       benchSitCount,
       woolCount,
-      liveWatchCount: Math.floor(Math.random() * 50) + 80,
-      showBenchHint: !benchDraggedOnce,
+      showBenchHint: false,
       bgQuote,
       bgQuoteLines
     });
     
     // 加载云存储图片链接
     this.loadCloudImageUrls();
+    this.loadWoolFromCloud();
+    this.startPresence();
+  },
+  
+  // 背景声音选择
+  onTapBgMusic() {
+    const options = ['海浪', '鸟鸣', '下雨', '关闭背景声音'];
+    wx.showActionSheet({
+      itemList: options,
+      success: (res) => {
+        const idx = res.tapIndex;
+        if (idx === 3) {
+          this.stopAmbient();
+          wx.showToast({ title: '已关闭背景声音', icon: 'none' });
+          return;
+        }
+        const names = ['海浪', '鸟鸣', '下雨'];
+        const fileIDs = [
+          'cloud://cloud1-1gsyt78b92c539ef.636c-cloud1-1gsyt78b92c539ef-1370520707/mianyang/bgm/海浪.mp3',
+          'cloud://cloud1-1gsyt78b92c539ef.636c-cloud1-1gsyt78b92c539ef-1370520707/mianyang/bgm/鸟鸣.mp3',
+          'cloud://cloud1-1gsyt78b92c539ef.636c-cloud1-1gsyt78b92c539ef-1370520707/mianyang/bgm/下雨.mp3'
+        ];
+        const name = names[idx];
+        const fid = fileIDs[idx];
+        this.playAmbient(fid, name);
+      },
+      fail: (err) => {
+        const msg = (err && err.errMsg) ? String(err.errMsg) : '';
+        if (msg.indexOf('cancel') >= 0) return;
+        wx.showToast({ title: '操作失败', icon: 'none' });
+      }
+    });
+  },
+  
+  // 下拉版：展开/收起
+  toggleBgMusicDropdown() {
+    this.setData({ showBgMusicDropdown: !this.data.showBgMusicDropdown });
+  },
+  closeBgMusicDropdown() {
+    if (this.data.showBgMusicDropdown) {
+      this.setData({ showBgMusicDropdown: false });
+    }
+  },
+  onSelectBgMusic(e) {
+    const close = e.currentTarget.dataset.close;
+    if (close) {
+      this.stopAmbient();
+      this.setData({ showBgMusicDropdown: false });
+      wx.showToast({ title: '已关闭背景声音', icon: 'none' });
+      return;
+    }
+    const name = e.currentTarget.dataset.name;
+    const fid = e.currentTarget.dataset.fid;
+    if (fid && name) {
+      this.playAmbient(fid, name);
+    }
+    this.setData({ showBgMusicDropdown: false });
+  },
+  async ensureCloudInstance() {
+    let cloud = getApp().cloud;
+    if (!cloud) {
+      cloud = new wx.cloud.Cloud({
+        resourceAppid: 'wx85d92d28575a70f4',
+        resourceEnv: 'cloud1-1gsyt78b92c539ef',
+      });
+      try { await cloud.init(); } catch (_){}
+      getApp().cloud = cloud;
+    }
+    return cloud;
+  },
+  async playAmbient(fileID, name) {
+    try {
+      const cloud = await this.ensureCloudInstance();
+      // 暂停并抑制全局 BGM
+      try { if (getApp && typeof getApp === 'function') { getApp().suppressBGM(); getApp().stopMusic(); } } catch (_){}
+      // 获取临时链接
+      const res = await cloud.getTempFileURL({ fileList: [fileID] });
+      const url = (res && res.fileList && res.fileList[0] && res.fileList[0].tempFileURL) ? res.fileList[0].tempFileURL : '';
+      if (!url) {
+        wx.showToast({ title: '音频加载失败', icon: 'none' });
+        return;
+      }
+      // 初始化或复用页面内音频
+      if (!this._ambientCtx) {
+        const ctx = wx.createInnerAudioContext();
+        if (wx.setInnerAudioOption) {
+          wx.setInnerAudioOption({ obeyMuteSwitch: false, mixWithOther: false });
+        } else {
+          ctx.obeyMuteSwitch = false;
+        }
+        ctx.loop = true;
+        ctx.volume = 0.35;
+        ctx.onError(() => {
+          wx.showToast({ title: '播放失败', icon: 'none' });
+        });
+        this._ambientCtx = ctx;
+      }
+      // 设置并播放
+      try { this._ambientCtx.stop(); } catch (_){}
+      this._ambientCtx.src = url;
+      this._ambientCtx.play();
+      this.setData({ ambientName: name, ambientPlaying: true });
+      wx.showToast({ title: `已播放：${name}`, icon: 'none' });
+    } catch (err) {
+      console.error('播放背景声音失败', err);
+      wx.showToast({ title: '播放失败', icon: 'none' });
+    }
+  },
+  stopAmbient() {
+    if (this._ambientCtx) {
+      try { this._ambientCtx.stop(); } catch (_){}
+      try { this._ambientCtx.destroy(); } catch (_){}
+      this._ambientCtx = null;
+    }
+    this.setData({ ambientName: '', ambientPlaying: false });
+    try { if (getApp && typeof getApp === 'function') { getApp().releaseBGM(); getApp().playMusic(true); } } catch (_){}
   },
   
   loadCloudImageUrls: async function() {
@@ -292,13 +412,10 @@ Page({
       result.fileList.forEach((file, index) => {
         if (file && file.status === 0 && file.tempFileURL) {
           validImages.push(file.tempFileURL);
-          console.log(`成功加载攻略图片 ${index}:`, file.tempFileURL);
         } else {
           console.warn(`获取放松攻略图片失败: ${guideImagePaths[index]}, 文件状态:`, file);
         }
       });
-      
-      console.log('最终有效的攻略图片数量：', validImages.length, '图片列表：', validImages);
       
       // 保存到缓存
       wx.setStorageSync(cacheKey, {
@@ -399,10 +516,7 @@ Page({
       currentGuideImageIndex: e.detail.current
     });
   },
-  
-  onTapBgMusic() {
-    wx.showToast({ title: '背景声音', icon: 'none' });
-  },
+ 
   onSitMinutesChange(e) {
     const idx = parseInt(e.detail.value, 10);
     const opts = this.data.sitMinutesOptions;
@@ -425,27 +539,38 @@ Page({
         self.setData({ benchSitCount: n, woolCount: wool });
         wx.setStorageSync('benchSitCount', n);
         wx.setStorageSync('woolCount', wool);
+        self.updateUserWool(10).then(() => {
+          self.loadWoolFromCloud();
+        }).catch(() => {});
         wx.showToast({ title: '获得 10 羊毛', icon: 'success', duration: 2000 });
-        // 接力逻辑：第一个人收到固定文案，之后的人收到上一个人写的留言
-        const relayMessage = wx.getStorageSync('relayMessage') || '我在这里，坐了十分钟又十分钟。愿你在这里接住疲惫，也拾起勇气，起身时，轻装上阵，眼里有光。';
-        // 坐满10分钟即生成一张“拍立得”（先占位，写完给下一位后再补全）
+        const defaultRelay = '我在这里，坐了十分钟又十分钟。愿你在这里接住疲惫，也拾起勇气，起身时，轻装上阵，眼里有光。';
         const recordId = String(Date.now());
         const dateStr = (function () {
           const d = new Date();
           return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
         })();
-        const records = wx.getStorageSync('benchSitRecords') || [];
-        records.unshift({ id: recordId, date: dateStr, durationMinutes: minutes, received: relayMessage, myMessage: '' });
-        wx.setStorageSync('benchSitRecords', records);
-        setTimeout(() => {
-          self.setData({
-            relayModalVisible: true,
-            relayStep: 'write',
-            relayMessage,
-            relayInputText: '',
-            currentSitRecordId: recordId
-          });
-        }, 2100);
+        const handleRelay = (msg) => {
+          const records = wx.getStorageSync('benchSitRecords') || [];
+          records.unshift({ id: recordId, date: dateStr, durationMinutes: minutes, received: msg, myMessage: '' });
+          wx.setStorageSync('benchSitRecords', records);
+          setTimeout(() => {
+            self.setData({
+              relayModalVisible: true,
+              relayStep: 'write',
+              relayMessage: msg,
+              relayInputText: '',
+              currentSitRecordId: recordId
+            });
+          }, 2100);
+        };
+        const localMsg = wx.getStorageSync('relayMessage') || '';
+        self.fetchLatestRelayMessage().then((m) => {
+          const msg = m || localMsg || defaultRelay;
+          handleRelay(msg);
+        }).catch(() => {
+          const msg = localMsg || defaultRelay;
+          handleRelay(msg);
+        });
         return;
       }
       const m = Math.floor(sec / 60), s = sec % 60;
@@ -478,7 +603,6 @@ Page({
       if (idx > -1) {
         records[idx] = { ...records[idx], myMessage: text };
       } else {
-        // 兜底：未找到占位记录则新建
         const d = new Date();
         const dateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
         records.unshift({ id: String(Date.now()), date: dateStr, durationMinutes: 10, received: this.data.relayMessage || '', myMessage: text });
@@ -486,13 +610,48 @@ Page({
     }
     wx.setStorageSync('benchSitRecords', records);
     wx.setStorageSync('relayMessage', text);
+    this.saveRelayMessage(text).catch(() => {});
     this.setData({ relayModalVisible: false, relayStep: 'show', relayInputText: '', currentSitRecordId: '' });
-    wx.showToast({ title: '已保存到夏日时光机', icon: 'success' });
+    wx.showToast({ title: '已保存', icon: 'success' });
+  },
+  async fetchLatestRelayMessage() {
+    try {
+      await this.initCloud();
+      const db = this.cloud.database();
+      const res = await db.collection('summer_relay_messages').orderBy('created_at', 'desc').limit(1).get();
+      const arr = res && res.data ? res.data : [];
+      if (arr.length > 0 && arr[0].message) return arr[0].message;
+      return '';
+    } catch (e) {
+      return '';
+    }
+  },
+  async saveRelayMessage(text) {
+    try {
+      await this.initCloud();
+      const db = this.cloud.database();
+      await db.collection('summer_relay_messages').add({
+        data: {
+          message: text,
+          created_at: db.serverDate()
+        }
+      });
+    } catch (e) {}
   },
   onHide() {
     if (this.data._sitTimer) {
       this.setData({ showAwayNotice: true });
     }
+    if (this._benchHintTimer) {
+      clearTimeout(this._benchHintTimer);
+      this._benchHintTimer = null;
+    }
+    if (this._benchInitTimer) {
+      clearTimeout(this._benchInitTimer);
+      this._benchInitTimer = null;
+    }
+    // 页面隐藏时停止庭院背景声音，并恢复全局 BGM
+    this.stopAmbient();
   },
   onShow: function () {
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
@@ -501,8 +660,27 @@ Page({
       })
     }
     
+    if (this._benchInitTimer) {
+      clearTimeout(this._benchInitTimer);
+      this._benchInitTimer = null;
+    }
+    this.setData({ showBenchHint: true });
+    this._benchInitTimer = setTimeout(() => {
+      this.setData({ showBenchHint: false });
+      this._benchInitTimer = null;
+    }, 3000);
+    
     // 在页面显示时预加载背景图片（如果有缓存则快速显示，否则异步加载）
     this.loadCloudImageUrls();
+    this.startPresence();
+    this.loadWoolFromCloud();
+    if (this._presenceKickTimer) {
+      clearTimeout(this._presenceKickTimer);
+      this._presenceKickTimer = null;
+    }
+    this._presenceKickTimer = setTimeout(() => {
+      if (typeof this.refreshPresenceCount === 'function') this.refreshPresenceCount();
+    }, 1000);
   },
 
   onDismissAwayNotice() {
@@ -644,6 +822,14 @@ Page({
   },
   onBenchTouchStart(e) {
     const touches = e.touches;
+    if (this._benchHintTimer) {
+      clearTimeout(this._benchHintTimer);
+      this._benchHintTimer = null;
+    }
+    if (this._benchInitTimer) {
+      clearTimeout(this._benchInitTimer);
+      this._benchInitTimer = null;
+    }
     this.setData({ _hasDraggedThisTouch: false });
     if (touches.length >= 2) {
       const dist = this._getTouchDistance(touches);
@@ -674,11 +860,15 @@ Page({
       const t = touches[0];
       const dx = t.clientX - this.data._benchTouchStartX;
       const dy = t.clientY - this.data._benchTouchStartY;
-      this.setData({
+      const shouldHide = !!this.data.showBenchHint;
+      this.setData(Object.assign({
         benchX: this.data._benchStartX + dx,
         benchY: this.data._benchStartY + dy,
         _hasDraggedThisTouch: true
-      });
+      }, shouldHide ? { showBenchHint: false } : {}));
+      if (shouldHide && !wx.getStorageSync('benchDraggedOnce')) {
+        wx.setStorageSync('benchDraggedOnce', true);
+      }
     }
   },
   onBenchTouchEnd(e) {
@@ -687,10 +877,21 @@ Page({
         _pinchStartDistance: this._getTouchDistance(e.touches),
         _pinchStartScale: this.data.benchScale
       });
-    } else if (e.touches.length === 0 && this.data._hasDraggedThisTouch) {
-      if (!wx.getStorageSync('benchDraggedOnce')) {
-        wx.setStorageSync('benchDraggedOnce', true);
-        this.setData({ showBenchHint: false });
+    } else if (e.touches.length === 0) {
+      if (this.data._hasDraggedThisTouch) {
+        if (!wx.getStorageSync('benchDraggedOnce')) {
+          wx.setStorageSync('benchDraggedOnce', true);
+          this.setData({ showBenchHint: false });
+        }
+      } else {
+        this.setData({ showBenchHint: true });
+        if (this._benchHintTimer) {
+          clearTimeout(this._benchHintTimer);
+        }
+        this._benchHintTimer = setTimeout(() => {
+          this.setData({ showBenchHint: false });
+          this._benchHintTimer = null;
+        }, 1200);
       }
     }
   },
@@ -833,7 +1034,23 @@ Page({
    * 生命周期函数--监听页面隐藏
    */
   onHide: function () {
-
+    if (this.data._sitTimer) {
+      this.setData({ showAwayNotice: true });
+    }
+    if (this._benchHintTimer) {
+      clearTimeout(this._benchHintTimer);
+      this._benchHintTimer = null;
+    }
+    if (this._benchInitTimer) {
+      clearTimeout(this._benchInitTimer);
+      this._benchInitTimer = null;
+    }
+    if (this._presenceKickTimer) {
+      clearTimeout(this._presenceKickTimer);
+      this._presenceKickTimer = null;
+    }
+    this.stopAmbient();
+    this.stopPresence();
   },
 
   /**
@@ -841,6 +1058,7 @@ Page({
    */
   onUnload: function () {
     if (this.data._sitTimer) clearInterval(this.data._sitTimer);
+    this.stopPresence();
   },
 
   /**
@@ -1252,5 +1470,211 @@ Page({
       console.error('云存储测试出错：', error);
       return { success: false, error: error.message };
     }
+  },
+  refreshPresenceCount: async function() {
+    try {
+      await this.initCloud();
+      const db = this.cloud.database();
+      const _ = db.command;
+      const cutoff = new Date(Date.now() - 30000);
+      const res = await db.collection('summer_garden_presence')
+        .where({ page: 'garden', last_seen: _.gte(cutoff) })
+        .count();
+      const c = (res && typeof res.total === 'number') ? res.total : 0;
+      const display = this._presenceHasFirstReal ? c : Math.max(1, c);
+      this.setData({ liveWatchCount: display });
+    } catch (_) {}
+  },
+  
+  loadWoolFromCloud: async function() {
+    try {
+      await this.initCloud();
+      const db = this.cloud.database();
+      let openid = wx.getStorageSync('openid');
+      if (!openid) {
+        try {
+          const loginRes = await (getApp().cloud || wx.cloud).callFunction({ name: 'login', data: {} });
+          openid = loginRes && loginRes.result && loginRes.result.openid ? loginRes.result.openid : '';
+          if (openid) wx.setStorageSync('openid', openid);
+        } catch (_) {}
+      }
+      if (!openid) {
+        const wool = wx.getStorageSync('woolCount') || 0;
+        this.setData({ woolCount: wool });
+        return;
+      }
+      const res = await db.collection('summeruser').where({ _openid: openid }).get();
+      if (res && res.data && res.data.length > 0) {
+        const wool = res.data[0].wool || 0;
+        wx.setStorageSync('woolCount', wool);
+        this.setData({ woolCount: wool });
+      } else {
+        const wool = wx.getStorageSync('woolCount') || 0;
+        this.setData({ woolCount: wool });
+      }
+    } catch (_) {
+      const wool = wx.getStorageSync('woolCount') || 0;
+      this.setData({ woolCount: wool });
+    }
+  },
+  updateUserWool: async function(increment) {
+    try {
+      await this.initCloud();
+      const db = this.cloud.database();
+      let openid = wx.getStorageSync('openid');
+      if (!openid) {
+        try {
+          const loginRes = await (getApp().cloud || wx.cloud).callFunction({ name: 'login', data: {} });
+          openid = loginRes && loginRes.result && loginRes.result.openid ? loginRes.result.openid : '';
+          if (openid) wx.setStorageSync('openid', openid);
+        } catch (_) {}
+      }
+      if (!openid) {
+        const c = wx.getStorageSync('woolCount') || 0;
+        const n = c + increment;
+        wx.setStorageSync('woolCount', n);
+        this.setData({ woolCount: n });
+        return;
+      }
+      const res = await db.collection('summeruser').where({ _openid: openid }).get();
+      if (res && res.data && res.data.length > 0) {
+        const doc = res.data[0];
+        const cur = doc.wool || 0;
+        const n = cur + increment;
+        await db.collection('summeruser').doc(doc._id).update({ data: { wool: n, updateTime: db.serverDate() } });
+        wx.setStorageSync('woolCount', n);
+        this.setData({ woolCount: n });
+      } else {
+        await db.collection('summeruser').add({ data: { _openid: openid, wool: increment, createTime: db.serverDate(), updateTime: db.serverDate() } });
+        wx.setStorageSync('woolCount', increment);
+        this.setData({ woolCount: increment });
+      }
+    } catch (_) {
+      const c = wx.getStorageSync('woolCount') || 0;
+      const n = c + increment;
+      wx.setStorageSync('woolCount', n);
+      this.setData({ woolCount: n });
+    }
+  },
+  
+  startPresence: async function() {
+    try {
+      await this.initCloud();
+      const db = this.cloud.database();
+      if (this._presenceTimer) {
+        clearInterval(this._presenceTimer);
+        this._presenceTimer = null;
+      }
+      if (this._presenceWatcher && this._presenceWatcher.close) {
+        try { this._presenceWatcher.close(); } catch(_){}
+        this._presenceWatcher = null;
+      }
+      if (this._presenceRetryTimer) {
+        clearTimeout(this._presenceRetryTimer);
+        this._presenceRetryTimer = null;
+      }
+      if (!this.data.liveWatchCount || this.data.liveWatchCount < 1) {
+        this.setData({ liveWatchCount: 1 });
+      }
+      this._presenceBootstrapTime = Date.now();
+      this._presenceHasFirstReal = false;
+      if (!this._presenceDocId) {
+        try {
+          const addRes = await db.collection('summer_garden_presence').add({
+            data: {
+              page: 'garden',
+              created_at: db.serverDate(),
+              last_seen: db.serverDate()
+            }
+          });
+          this._presenceDocId = addRes && addRes._id ? addRes._id : '';
+          this.setData({ liveWatchCount: 1 });
+        } catch (e) {
+          this._presenceRetryTimer = setTimeout(() => {
+            this.startPresence();
+          }, 800);
+          return;
+        }
+      } else {
+        try {
+          await db.collection('summer_garden_presence').doc(this._presenceDocId).update({
+            data: { last_seen: db.serverDate() }
+          });
+        } catch (_) {}
+      }
+      try {
+        const watcher = await db.collection('summer_garden_presence').where({ page: 'garden' }).watch({
+          onChange: snap => {
+            const docs = snap && snap.docs ? snap.docs : [];
+            const cutoffMs = Date.now() - 30000;
+            let c = 0;
+            let hasSelf = false;
+            for (let i = 0; i < docs.length; i++) {
+              const d = docs[i];
+              const t = d && d.last_seen ? d.last_seen : null;
+              const ts = t && typeof t.getTime === 'function' ? t.getTime() : (t ? new Date(t).getTime() : 0);
+              if (!isNaN(ts) && ts >= cutoffMs) {
+                c++;
+                if (this._presenceDocId && d._id === this._presenceDocId) hasSelf = true;
+              }
+            }
+            if (hasSelf) this._presenceHasFirstReal = true;
+            const display = this._presenceHasFirstReal ? c : Math.max(1, c);
+            this.setData({ liveWatchCount: display });
+          },
+          onError: _ => {
+            try { if (this._presenceWatcher && this._presenceWatcher.close) this._presenceWatcher.close(); } catch(_){}
+            this._presenceWatcher = null;
+          }
+        });
+        this._presenceWatcher = watcher;
+      } catch (_) {
+        this._presenceRetryTimer = setTimeout(() => {
+          this.startPresence();
+        }, 1200);
+      }
+      const heartbeat = async () => {
+        try {
+          await db.collection('summer_garden_presence').doc(this._presenceDocId).update({
+            data: { last_seen: db.serverDate() }
+          });
+        } catch (_) {}
+        try {
+          const _ = db.command;
+          const cutoff = new Date(Date.now() - 30000);
+          const countRes = await db.collection('summer_garden_presence')
+            .where({ page: 'garden', last_seen: _.gte(cutoff) })
+            .count();
+          const c = (countRes && typeof countRes.total === 'number') ? countRes.total : 0;
+          const display = this._presenceHasFirstReal ? c : Math.max(1, c);
+          this.setData({ liveWatchCount: display });
+        } catch (_) {}
+      };
+      await heartbeat();
+      this._presenceTimer = setInterval(heartbeat, 10000);
+    } catch (e) {
+    }
+  },
+  stopPresence: async function() {
+    if (this._presenceTimer) {
+      clearInterval(this._presenceTimer);
+      this._presenceTimer = null;
+    }
+    if (this._presenceWatcher && this._presenceWatcher.close) {
+      try { this._presenceWatcher.close(); } catch(_){}
+      this._presenceWatcher = null;
+    }
+    if (this._presenceRetryTimer) {
+      clearTimeout(this._presenceRetryTimer);
+      this._presenceRetryTimer = null;
+    }
+    try {
+      if (this._presenceDocId && this.cloud) {
+        const db = this.cloud.database();
+        const id = this._presenceDocId;
+        this._presenceDocId = '';
+        await db.collection('summer_garden_presence').doc(id).remove();
+      }
+    } catch (_) {}
   }
 })

@@ -16,7 +16,7 @@ Page({
     filteredProducts: [],
     loading: false,
     loadError: '',
-    woolImageUrl: '/assets/images/羊毛.webp'
+    woolImageUrl: ''
   },
   onLoad() {
     this._syncWoolCount();

@@ -1,4 +1,12 @@
 // pages/hoofprint/hoofprint.js
+const STATION_META = {
+  charging: { id: 'charging', name: '抽取能量卡片' },
+  supply: { id: 'supply', name: '勇气补给' },
+  solitude: { id: 'solitude', name: '独处净土' },
+  time: { id: 'time', name: '时光胶囊' },
+  worry: { id: 'worry', name: '弹走烦恼' }
+};
+
 Page({
 
   /**
@@ -23,7 +31,39 @@ Page({
 
     // 收藏状态
     favoriteArticles: [40, 41],
-    favoriteKeys: []
+    favoriteKeys: [],
+
+    // 顶部五个功能站点的显示/删除状态
+    stationVisibility: {
+      charging: true,
+      supply: true,
+      solitude: true,
+      time: true,
+      worry: true
+    },
+    deletedStations: [], // { id, name }
+
+    // 顶部五个功能的拖拽坐标（相对于 journey-map 左上角，像素）
+    stationPositions: {
+      // charging: { x, y }, ...
+    },
+    // 拖拽中的中间状态
+    dragState: {
+      activeStation: '',
+      startX: 0,
+      startY: 0,
+      originX: 0,
+      originY: 0
+    },
+    // journey-map 的位置信息（像素）
+    mapRect: null,
+    
+    // 能量卡片相关
+    showEnergyCardModal: false, // 控制能量卡片弹窗显示
+    energyCard: null, // 抽取到的能量卡片
+    energyCardImage: '', // 能量卡片图片临时链接
+    energyCardLoading: false, // 能量卡片加载状态
+    forceEnergyCardRender: 0 // 强制能量卡片重新渲染的标志
   },
 
   gentleTimer: null,
@@ -37,6 +77,30 @@ Page({
       selectedDate: '',
       selectedDateText: '全部日期'
     });
+
+    // 读取本地已删站点配置，更新可见性与底部列表
+    try {
+      const deleted = wx.getStorageSync('summer_deleted_stations') || [];
+      const vis = {
+        charging: true,
+        supply: true,
+        solitude: true,
+        time: true,
+        worry: true
+      };
+      (deleted || []).forEach(item => {
+        if (item && item.id && Object.prototype.hasOwnProperty.call(vis, item.id)) {
+          vis[item.id] = false;
+        }
+      });
+      // 读取本地拖拽坐标（如果有）
+      const savedPositions = wx.getStorageSync('summer_station_positions') || {};
+      this.setData({
+        stationVisibility: vis,
+        deletedStations: deleted,
+        stationPositions: savedPositions || {}
+      });
+    } catch (_) {}
 
     // 加载收藏状态
     const favoriteArticles = wx.getStorageSync('favoriteArticles') || [];
@@ -333,7 +397,8 @@ Page({
    * 生命周期函数--监听页面初次渲染完成
    */
   onReady: function () {
-
+    // 渲染完成后，计算 journey-map 和五个站点当前的实际位置，用于拖拽
+    this.initStationPositions();
   },
 
   /**
@@ -609,6 +674,272 @@ Page({
   },
 
   /**
+   * 顶部闯关地图：点击站点
+   */
+  tapStation: function (e) {
+    if (getApp().playClickSound) getApp().playClickSound();
+    const station = e.currentTarget.dataset.station;
+    
+    // 如果是抽取能量卡片站点，执行抽取功能
+    if (station === 'charging') {
+      // 使用延迟确保页面渲染完成
+      setTimeout(() => {
+        this.drawEnergyCard();
+      }, 50);
+      return;
+    }
+    
+    const article = this.getLatestArticleForStation();
+
+    if (!article || !article.id) {
+      wx.showToast({
+        title: '暂时没有可以体验的小卡片',
+        icon: 'none'
+      });
+      return;
+    }
+
+    let url = `/pages/article-detail/article-detail?articleId=${article.id}`;
+    if (station === 'worry') {
+      url += '&isSmallCard=true';
+    } else {
+      const map = { supply: 1, solitude: 2, time: 3 };
+      const idx = map[station];
+      if (idx !== undefined) {
+        url += `&styleIndex=${idx}&singleStation=1`;
+      }
+    }
+
+    wx.navigateTo({ url });
+  },
+
+  /**
+   * 跳转到“一起守护绵羊副本”页面
+   */
+  goSheepRaid: function () {
+    if (getApp().playClickSound) getApp().playClickSound();
+    wx.navigateTo({
+      url: '/pages/sheep/sheep'
+    });
+  },
+
+  /**
+   * 初始化站点的绝对坐标（像素），用于后续拖拽
+   */
+  initStationPositions: function () {
+    const query = wx.createSelectorQuery().in(this);
+    query.select('.journey-map').boundingClientRect();
+    query.select('#station-charging').boundingClientRect();
+    query.select('#station-supply').boundingClientRect();
+    query.select('#station-solitude').boundingClientRect();
+    query.select('#station-time').boundingClientRect();
+    query.select('#station-worry').boundingClientRect();
+    query.exec(res => {
+      if (!res || !res[0]) return;
+      const mapRect = res[0];
+      const ids = ['charging', 'supply', 'solitude', 'time', 'worry'];
+      const nextPositions = Object.assign({}, this.data.stationPositions || {});
+      for (let i = 0; i < ids.length; i++) {
+        const rect = res[i + 1];
+        const id = ids[i];
+        if (!rect || !id) continue;
+        // 如果本地已经有保存的位置，就不覆盖（以用户上一次拖拽为准）
+        if (nextPositions[id] && typeof nextPositions[id].x === 'number' && typeof nextPositions[id].y === 'number') {
+          continue;
+        }
+        // 使用当前样式计算出来的 left/top（相对 journey-map 左上角）
+        const left = rect.left - mapRect.left;
+        const top = rect.top - mapRect.top;
+        nextPositions[id] = { x: left, y: top };
+      }
+      this.setData({
+        mapRect,
+        stationPositions: nextPositions
+      });
+      try {
+        wx.setStorageSync('summer_station_positions', nextPositions);
+      } catch (_) {}
+    });
+  },
+
+  /**
+   * 站点拖拽开始
+   */
+  onStationTouchStart: function (e) {
+    const station = e.currentTarget.dataset.station;
+    const touch = e.touches && e.touches[0];
+    if (!station || !touch) return;
+    // 每次按下重置拖拽移动标记，避免误触触发跳转
+    this._dragMoved = false;
+    const positions = this.data.stationPositions || {};
+    const current = positions[station] || { x: 0, y: 0 };
+    this.setData({
+      dragState: {
+        activeStation: station,
+        startX: touch.clientX,
+        startY: touch.clientY,
+        originX: current.x || 0,
+        originY: current.y || 0
+      }
+    });
+  },
+
+  /**
+   * 站点拖拽移动
+   */
+  onStationTouchMove: function (e) {
+    const state = this.data.dragState || {};
+    if (!state.activeStation) return;
+    const touch = e.touches && e.touches[0];
+    if (!touch) return;
+
+    const dx = touch.clientX - state.startX;
+    const dy = touch.clientY - state.startY;
+
+    // 判断是否发生了明显移动，用于后续阻止 tap 触发跳转（阈值放大，避免轻点被误判为拖拽）
+    if (!this._dragMoved && (Math.abs(dx) > 25 || Math.abs(dy) > 25)) {
+      this._dragMoved = true;
+    }
+
+    let newX = (state.originX || 0) + dx;
+    let newY = (state.originY || 0) + dy;
+
+    const mapRect = this.data.mapRect;
+    if (mapRect) {
+      const padding = 10; // 给四周留一点空隙
+      const minX = padding;
+      const minY = padding;
+      const maxX = Math.max(padding, mapRect.width - 220); // 估算卡片宽度
+      const maxY = Math.max(padding, mapRect.height - 160); // 估算卡片高度
+      if (newX < minX) newX = minX;
+      if (newY < minY) newY = minY;
+      if (newX > maxX) newX = maxX;
+      if (newY > maxY) newY = maxY;
+    }
+
+    const positions = Object.assign({}, this.data.stationPositions || {});
+    if (!positions[state.activeStation]) positions[state.activeStation] = {};
+    positions[state.activeStation].x = newX;
+    positions[state.activeStation].y = newY;
+
+    this.setData({
+      stationPositions: positions
+    });
+  },
+
+  /**
+   * 站点拖拽结束
+   */
+  onStationTouchEnd: function () {
+    const positions = this.data.stationPositions || {};
+    this.setData({
+      dragState: {
+        activeStation: '',
+        startX: 0,
+        startY: 0,
+        originX: 0,
+        originY: 0
+      }
+    });
+    try {
+      wx.setStorageSync('summer_station_positions', positions);
+    } catch (_) {}
+  },
+
+  /**
+   * 点击站点右上角的减号，准备删除该功能
+   */
+  onRemoveStationTap: function (e) {
+    const station = e.currentTarget.dataset.station;
+    if (!station || !STATION_META[station]) return;
+    const meta = STATION_META[station];
+    wx.showModal({
+      title: '确认删除',
+      content: `你确定删掉“${meta.name}”这个功能吗？`,
+      confirmText: '删掉',
+      cancelText: '再想想',
+      success: (res) => {
+        if (res.confirm) {
+          this.deleteStation(station);
+        }
+      }
+    });
+  },
+
+  // 阻止减号区域的触摸事件继续触发拖拽
+  onRemoveStationTouch: function () {
+    // 空函数即可，使用 catchtouchstart 拦截冒泡
+  },
+
+  /**
+   * 真正执行删除逻辑：隐藏顶部站点，并把它放到底部列表
+   */
+  deleteStation: function (station) {
+    const meta = STATION_META[station];
+    if (!meta) return;
+
+    const vis = Object.assign({}, this.data.stationVisibility || {});
+    vis[station] = false;
+
+    const currentDeleted = Array.isArray(this.data.deletedStations) ? this.data.deletedStations.slice() : [];
+    const exists = currentDeleted.some(item => item && item.id === station);
+    if (!exists) {
+      currentDeleted.push({ id: meta.id, name: meta.name });
+    }
+
+    this.setData({
+      stationVisibility: vis,
+      deletedStations: currentDeleted
+    });
+
+    try {
+      wx.setStorageSync('summer_deleted_stations', currentDeleted);
+    } catch (_) {}
+  },
+
+  /**
+   * 从页脚收纳区重新打开某个小站
+   */
+  onRestoreStationTap: function (e) {
+    const id = e.currentTarget.dataset.id;
+    if (!id || !Object.prototype.hasOwnProperty.call(STATION_META, id)) return;
+
+    const vis = Object.assign({}, this.data.stationVisibility || {});
+    vis[id] = true;
+
+    const nextDeleted = (this.data.deletedStations || []).filter(item => item && item.id !== id);
+
+    this.setData({
+      stationVisibility: vis,
+      deletedStations: nextDeleted
+    });
+
+    try {
+      wx.setStorageSync('summer_deleted_stations', nextDeleted);
+    } catch (_) {}
+  },
+
+  /**
+   * 选择用于站点跳转的文章：优先时间线最新一篇，其次轮播
+   */
+  getLatestArticleForStation: function () {
+    const { timelineData, carouselItems } = this.data;
+
+    if (Array.isArray(timelineData) && timelineData.length > 0) {
+      const firstBlock = timelineData[0];
+      if (firstBlock && Array.isArray(firstBlock.articles) && firstBlock.articles.length > 0) {
+        return firstBlock.articles[0];
+      }
+    }
+
+    if (Array.isArray(carouselItems) && carouselItems.length > 0) {
+      return { id: carouselItems[0].id };
+    }
+
+    return null;
+  },
+
+  /**
    * 记录阅读数量
    */
   recordReadCount: function(articleId) {
@@ -674,7 +1005,272 @@ Page({
     await this.loadFavoriteSet();
     this.filterTimeline();
   },
-
+  
+  /**
+   * 抽取能量卡片
+   */
+  drawEnergyCard: async function () {
+    
+    // 先显示加载状态
+    this.setData({
+      energyCardLoading: true,
+      showEnergyCardModal: true  // 立即显示模态框
+    });
+    
+    try {
+      // 等待云开发实例初始化
+      await this.initCloud();
+      
+      const db = this.cloud.database();
+      
+      // 从summer_energy集合中获取所有能量卡片
+      const res = await db.collection('summer_energy').get();
+      
+      if (!res.data || res.data.length === 0) {
+        wx.showToast({
+          title: '暂无能量卡片',
+          icon: 'none'
+        });
+        this.setData({
+          energyCardLoading: false,
+          showEnergyCardModal: false
+        });
+        return;
+      }
+      
+      // 随机选择一张卡片
+      const randomIndex = Math.floor(Math.random() * res.data.length);
+      const selectedCard = res.data[randomIndex];
+      
+      // 记录抽到的能量卡片及所有字段
+      console.log('抽到的能量卡片:', selectedCard);
+      console.log('能量卡片所有字段:', Object.keys(selectedCard || {}));
+      // 检查可能的图片字段
+      console.log('image字段:', selectedCard.image);
+      console.log('img字段:', selectedCard.img);
+      
+      // 获取图片临时链接 - 检查image字段（按规范）和img字段（兼容现有数据）
+      const imageField = selectedCard.image || selectedCard.img;
+      console.log('能量卡片图片字段:', imageField);
+      
+      if (!imageField) {
+        console.warn('能量卡片没有找到图片字段(image或img):', selectedCard);
+        wx.showToast({
+          title: '卡片缺少图片',
+          icon: 'none'
+        });
+        this.setData({
+          energyCard: selectedCard,
+          energyCardImage: '',
+          energyCardLoading: false
+        });
+        return;
+      }
+      // 兼容多种图片路径：cloud://、http(s)://、本地静态资源
+      if (typeof imageField !== 'string') {
+        console.error('图片字段不是字符串:', imageField);
+        wx.showToast({ title: '图片路径无效', icon: 'none' });
+        this.setData({ energyCard: selectedCard, energyCardImage: '', energyCardLoading: false });
+        return;
+      }
+      // 直接使用外链或本地静态资源
+      if (imageField.startsWith('http://') || imageField.startsWith('https://')) {
+        const urlWithTs = `${imageField}${imageField.includes('?') ? '&' : '?'}t=${Date.now()}`;
+        this.setData({
+          energyCard: selectedCard,
+          energyCardImage: urlWithTs,
+          energyCardLoading: false,
+          forceEnergyCardRender: this.data.forceEnergyCardRender + 1
+        });
+        return;
+      }
+      if (imageField.startsWith('/') || imageField.startsWith('./') || imageField.startsWith('../')) {
+        this.setData({
+          energyCard: selectedCard,
+          energyCardImage: imageField,
+          energyCardLoading: false,
+          forceEnergyCardRender: this.data.forceEnergyCardRender + 1
+        });
+        return;
+      }
+      // 云存储 fileID -> 临时链接
+      if (!imageField.startsWith('cloud://')) {
+        console.error('未知图片路径形式:', imageField);
+        wx.showToast({ title: '图片路径无效', icon: 'none' });
+        this.setData({ energyCard: selectedCard, energyCardImage: '', energyCardLoading: false });
+        return;
+      }
+      try {
+        console.log('正在获取临时链接:', imageField);
+        // 使用缓存转换，延长临时链接可用期
+        const ttlMs = 2 * 60 * 60 * 1000;
+        const tempMap = await this.convertTempUrlsWithCache(this.cloud, [imageField], ttlMs);
+        const tempUrl = tempMap[imageField];
+        
+        if (tempUrl) {
+          const imageUrlWithTimestamp = `${tempUrl}?t=${Date.now()}`;
+          this.setData({
+            energyCard: selectedCard,
+            energyCardImage: imageUrlWithTimestamp,
+            energyCardLoading: false,
+            forceEnergyCardRender: this.data.forceEnergyCardRender + 1
+          });
+        } else {
+          console.error('未获得有效的临时链接');
+          wx.showToast({ title: '图片链接获取失败', icon: 'none' });
+          this.setData({ energyCard: selectedCard, energyCardImage: '', energyCardLoading: false });
+        }
+      } catch (error) {
+        console.error('获取临时链接时发生错误:', error);
+        wx.showToast({
+          title: '图片加载失败',
+          icon: 'none'
+        });
+        this.setData({
+          energyCard: selectedCard,
+          energyCardImage: '',
+          energyCardLoading: false
+        });
+      }
+    } catch (error) {
+      console.error('抽取能量卡片失败:', error);
+      wx.showToast({
+        title: '抽取失败，请重试',
+        icon: 'none'
+      });
+      this.setData({
+        energyCardLoading: false,
+        showEnergyCardModal: false
+      });
+    }
+  },
+  
+  /**
+   * 关闭能量卡片弹窗
+   */
+  closeEnergyCardModal: function() {
+    // 添加延迟确保动画完成
+    setTimeout(() => {
+      this.setData({
+        showEnergyCardModal: false,
+        energyCard: null,
+        energyCardImage: '',
+        energyCardLoading: false
+      });
+    }, 150);
+  },
+  
+  /**
+   * 能量卡片图片加载完成
+   */
+  onEnergyCardImageLoad: function(e) {
+    console.log('能量卡片图片加载完成', e);
+    console.log('图片加载详情:', e.detail);
+    // 图片加载完成后，强制刷新渲染以确保显示
+    this.setData({
+      forceEnergyCardRender: this.data.forceEnergyCardRender + 1
+    });
+  },
+  
+  /**
+   * 能量卡片图片加载失败
+   */
+  onEnergyCardImageError: function(e) {
+    console.error('能量卡片图片加载失败', e);
+    console.error('错误详情:', e.detail);
+    wx.showToast({
+      title: '图片加载失败，请稍后再试',
+      icon: 'none'
+    });
+    // 图片加载失败时，清空图片并重新生成forceRender标志
+    this.setData({
+      energyCardImage: '',
+      forceEnergyCardRender: this.data.forceEnergyCardRender + 1
+    });
+  },
+  
+  /**
+   * 重新加载能量卡片图片
+   */
+  reloadEnergyCardImage: function(e) {
+    console.log('点击重新加载能量卡片图片');
+    if (this.data.energyCard && !this.data.energyCardLoading) {
+      this.setData({
+        energyCardLoading: true
+      });
+      
+      // 重新获取图片临时链接 - 检查image字段（按规范）和img字段（兼容现有数据）
+      const imageField = this.data.energyCard.image || this.data.energyCard.img;
+      console.log('重新加载图片字段:', imageField);
+      
+      if (!imageField) {
+        console.warn('能量卡片缺少图片字段:', this.data.energyCard);
+        wx.showToast({
+          title: '卡片缺少图片',
+          icon: 'none'
+        });
+        this.setData({
+          energyCardLoading: false
+        });
+        return;
+      }
+      // 兼容多种图片路径
+      if (typeof imageField !== 'string') {
+        console.error('图片字段不是字符串:', imageField);
+        wx.showToast({ title: '图片路径无效', icon: 'none' });
+        this.setData({ energyCardLoading: false });
+        return;
+      }
+      if (imageField.startsWith('http://') || imageField.startsWith('https://')) {
+        const urlWithTs = `${imageField}${imageField.includes('?') ? '&' : '?'}t=${Date.now()}`;
+        this.setData({
+          energyCardImage: urlWithTs,
+          energyCardLoading: false,
+          forceEnergyCardRender: this.data.forceEnergyCardRender + 1
+        });
+        return;
+      }
+      if (imageField.startsWith('/') || imageField.startsWith('./') || imageField.startsWith('../')) {
+        this.setData({
+          energyCardImage: imageField,
+          energyCardLoading: false,
+          forceEnergyCardRender: this.data.forceEnergyCardRender + 1
+        });
+        return;
+      }
+      if (!imageField.startsWith('cloud://')) {
+        console.error('未知图片路径形式:', imageField);
+        wx.showToast({ title: '图片路径无效', icon: 'none' });
+        this.setData({ energyCardLoading: false });
+        return;
+      }
+      console.log('正在获取临时链接:', imageField);
+      // 使用缓存转换
+      const ttlMs = 2 * 60 * 60 * 1000;
+      this.convertTempUrlsWithCache(this.cloud, [imageField], ttlMs)
+        .then(tempMap => {
+          const tempUrl = tempMap[imageField];
+          if (tempUrl) {
+            const imageUrlWithTimestamp = `${tempUrl}?t=${Date.now()}`;
+            this.setData({
+              energyCardImage: imageUrlWithTimestamp,
+              energyCardLoading: false,
+              forceEnergyCardRender: this.data.forceEnergyCardRender + 1
+            });
+          } else {
+            console.error('获取图片临时链接失败');
+            wx.showToast({ title: '图片链接获取失败', icon: 'none' });
+            this.setData({ energyCardLoading: false });
+          }
+        })
+        .catch(err => {
+          console.error('重新加载图片时出错:', err);
+          wx.showToast({ title: '图片加载失败', icon: 'none' });
+          this.setData({ energyCardLoading: false });
+        });
+    }
+  },
+  
   initCloud: async function() {
     if (getApp().cloud) {
       this.cloud = getApp().cloud;

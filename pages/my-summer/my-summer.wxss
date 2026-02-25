@@ -176,8 +176,10 @@ page {
 .a4-preview-section {
   display: flex;
   justify-content: center;
+  align-items: center;
   margin-top: 195rpx; /* 向下平移15rpx：180rpx + 15rpx */
   margin-bottom: 40rpx;
+  width: 100%;
 }
 
 .a4-preview-container {

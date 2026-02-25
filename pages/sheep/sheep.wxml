@@ -1,4 +1,123 @@
 <!--pages/sheep/sheep.wxml-->
-<view class="container">
+<view class="sheep-container">
   <image class="bg-image" src="/assets/images/splash-bg.png" mode="aspectFill"></image>
+  
+  <!-- 右上角周报入口 -->
+  <view class="report-entry" bindtap="onTapGoToWeeklyReport">
+    <text class="report-entry-text">周报</text>
+  </view>
+
+  <view class="sheep-card">
+    <view class="sheep-header">
+      <text class="sheep-subtitle">和绵羊一起，\n在未知的世界里，坚定向前。</text>
+    </view>
+
+    <!-- 集体进度概览 -->
+    <view class="collective-progress-card">
+      <view class="progress-main">
+        <view class="progress-left">
+          <text class="progress-label">全球轨迹</text>
+          <view class="progress-social">
+            <text class="stats-text">今日有 {{todayAcceleratedCount}} 名伙伴为夏小咩加速</text>
+          </view>
+        </view>
+        <view class="progress-right">
+          <text class="progress-km">{{currentCollectiveDistance}}</text>
+          <text class="progress-unit">km</text>
+        </view>
+      </view>
+      <view class="progress-bar-bg" wx:if="{{!useFreePath}}">
+        <view class="progress-bar-fill" style="width: {{(currentCollectiveDistance/totalDistance)*100}}%"></view>
+      </view>
+    </view>
+
+    <!-- 个人行动力卡片 -->
+    <view class="action-status-grid">
+      <!-- 步数 -> 方向 -->
+      <view class="status-item step-status">
+        <text class="item-label">今日步数</text>
+        <text class="item-value">{{todayStepCount}}<text class="item-unit">步</text></text>
+        <text class="item-hint">行动决定方向</text>
+        <view class="item-ctrl">
+          <button class="mini-btn mini-direction" bindtap="onTapToSelectDirection" disabled="{{todayStepCount < 3000 || hasContributedToday}}">
+            {{hasContributedToday ? '已选方向' : '选择方向'}}
+          </button>
+          <view class="v-divider"></view>
+        </view>
+      </view>
+      <!-- 专注力 -> 速度 (重命名为 坐下时长) -->
+      <view class="status-item focus-status">
+        <text class="item-label">坐下时长</text>
+        <text class="item-value">{{focusMinutes}}<text class="item-unit">min</text></text>
+        <text class="item-hint">专注决定速度</text>
+        <view class="item-ctrl">
+          <button class="mini-btn mini-sync" bindtap="onTapSyncSteps">同步距离</button>
+        </view>
+      </view>
+    </view>
+
+    <view class="contribution-tip" wx:if="{{personalContributionKm > 0}}">
+      <text>你为这条路增加了 {{personalContributionKm}} 公里</text>
+    </view>
+
+    <!-- 规则与状态提示卡片 -->
+    <view class="rules-status-card">
+      <view class="rule-row">
+        <view class="rule-dot"></view>
+        <text class="rule-content">坐下时长每 10min 自动兑换为 50 公里</text>
+      </view>
+      <view class="rule-divider"></view>
+      <view class="rule-row">
+        <view class="rule-dot status-{{todayStepCount >= 3000 ? 'ready' : 'pending'}}"></view>
+        <text class="rule-content" wx:if="{{todayStepCount < 3000}}">满 3000 步解锁今日方向选择权</text>
+        <text class="rule-content" wx:elif="{{!hasContributedToday}}">已满足步数，可点击“选择方向”</text>
+        <text class="rule-content" wx:else>今日已完成方向选择，明天再来吧</text>
+      </view>
+    </view>
+
+    <!-- 方向选择弹窗/区域 (只有满足条件时才显示) -->
+    <view class="direction-drawer {{showDirectionDrawer ? 'show' : ''}}" wx:if="{{todayStepCount >= 3000 && !hasContributedToday}}">
+      <view class="drawer-mask" bindtap="onCloseDirectionDrawer"></view>
+      <view class="drawer-content">
+        <view class="drawer-header">
+          <text class="drawer-title">选择前进的方向</text>
+          <text class="drawer-close" bindtap="onCloseDirectionDrawer">×</text>
+        </view>
+        <view class="next-list">
+          <view 
+            wx:for="{{nextCandidates}}" 
+            wx:key="id" 
+            class="next-chip {{selectedNextNodeId === item.id ? 'active' : ''}}"
+            bindtap="onSelectNextNode"
+            data-id="{{item.id}}"
+          >
+            {{item.name}}
+          </view>
+        </view>
+        <button class="submit-direction-btn" bindtap="submitNextNode">确认方向</button>
+      </view>
+    </view>
+
+  </view>
+
+  <view class="relay-actions">
+    <button class="relay-btn" wx:if="{{useFreePath && allowSetStart}}" bindtap="onResetStartToMyLocation">用当前位置做起点</button>
+  </view>
+
+  <view class="map-section">
+    <view class="map-ctrl-row">
+      <text class="map-title">{{useFreePath ? ('当前方向：' + (directionDisplay || '未设置')) : '前进路线：漠河 ➔ 三亚'}}</text>
+      <text class="map-subtitle" wx:if="{{placeName}}">当前位置：{{placeName}}</text>
+    </view>
+    <map
+      class="map-box"
+      latitude="{{latitude}}"
+      longitude="{{longitude}}"
+      scale="{{scale}}"
+      markers="{{markers}}"
+      polyline="{{polyline}}"
+      show-location="true"
+      bindtap="onMapTap"
+    ></map>
+  </view>
 </view>

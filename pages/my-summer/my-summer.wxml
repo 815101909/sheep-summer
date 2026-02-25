@@ -73,13 +73,13 @@
             <image class="column-image" src="/assets/images/会员.png" mode="aspectFit" />
             <view class="title-section">
               <view class="title-row">
-                <text class="column-title">小绵羊的会员馆</text>
+                <text class="column-title">小绵羊的夏天持有者</text>
                 <text class="separator">｜</text>
-                <text class="column-desc-inline">解锁专属功能</text>
+                <text class="column-desc-inline">成为夏天的主人</text>
               </view>
               <view class="column-status">
-                <text class="status-text" wx:if="{{!isVip}}">还不是会员｜点击查看会员详情</text>
-                <text class="status-text" wx:if="{{isVip}}">{{vipExpiry}}｜点击查看会员详情</text>
+                <text class="status-text" wx:if="{{!isVip}}">还不是夏天持有者｜点击查看详情</text>
+                <text class="status-text" wx:if="{{isVip}}">{{vipExpiry}}｜点击查看详情</text>
               </view>
             </view>
           </view>

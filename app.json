@@ -5,6 +5,7 @@
     "pages/weekly-report/weekly-report",
     "pages/music/music",
     "pages/hoofprint/hoofprint",
+    "pages/sheep/sheep",
     "pages/article-detail/article-detail",
     "pages/print/print",
     "pages/music-print/music-print",
@@ -62,5 +63,11 @@
         "selectedIconPath": "assets/images/garden.png"
       }
     ]
-  }
+  },
+  "permission": {
+    "scope.userLocation": {
+      "desc": "用于在绵羊页面显示当前位置与地图"
+    }
+  },
+  "requiredPrivateInfos": ["getLocation"]
 }

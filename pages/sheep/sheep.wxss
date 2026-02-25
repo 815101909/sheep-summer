@@ -1,16 +1,482 @@
 /* pages/sheep/sheep.wxss */
-.container {
+.sheep-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #e6f3ff 0%, #f0f8ff 50%, #f5faff 100%);
   position: relative;
+  background: #fdfdfd; /* 极简浅灰白 */
 }
 
 .bg-image {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.12; /* 更低的不透明度，作为隐约背景 */
+  z-index: 1;
+  pointer-events: none; /* 防止背景图拦截点击和拖拽事件 */
+}
+
+/* 右上角周报入口 */
+.report-entry {
+  position: absolute;
+  top: 60rpx;
+  right: 40rpx;
+  z-index: 10;
+  padding: 12rpx 28rpx;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1rpx solid #eee;
+  border-radius: 40rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.03);
+}
+
+.report-entry-text {
+  margin-bottom: 60rpx;
+  font-size: 26rpx;
+  color: #666;
+  font-weight: 200;
+}
+
+.sheep-mask {
+  display: none; /* 去掉复杂的渐变遮罩 */
+}
+
+.sheep-card {
+  position: relative;
+  z-index: 3;
+  padding: 60rpx 40rpx 20rpx;
+}
+
+.sheep-header {
+  text-align: left; /* 改为左对齐，更有设计感 */
+  margin-bottom: 60rpx;
+  padding-left: 10rpx;
+  border-left: 6rpx solid #e0e0e0;
+}
+
+.sheep-subtitle {
+  display: block;
+  font-size: 32rpx;
+  color: #333;
+  font-weight: 300;
+  letter-spacing: 2rpx;
+  line-height: 1.6;
+}
+
+/* 集体进度卡片 - 文艺留白风格 */
+.collective-progress-card {
+  background: #ffffff;
+  padding: 32rpx 36rpx;
+  border-radius: 4rpx;
+  margin-bottom: 50rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0,0,0,0.02);
+}
+
+.progress-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.progress-left {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.progress-label {
+  font-size: 24rpx;
+  color: #aaa;
+  font-weight: 300;
+  letter-spacing: 2rpx;
+}
+
+.progress-social {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.stats-text {
+  font-size: 20rpx;
+  color: #ccc;
+  font-weight: 300;
+}
+
+.relay-hint {
+  font-size: 18rpx;
+  color: #bbb;
+  font-style: italic;
+}
+
+.progress-right {
+  display: flex;
+  align-items: baseline;
+  gap: 6rpx;
+}
+
+.progress-km {
+  font-size: 52rpx;
+  font-weight: 200;
+  color: #222;
+  font-family: "PingFang SC", "STHeiti", sans-serif;
+  line-height: 1;
+}
+
+.progress-unit {
+  font-size: 24rpx;
+  color: #888;
+  font-weight: 300;
+}
+
+.progress-bar-bg {
+  height: 2rpx;
+  background: #f0f0f0;
+  margin-top: 24rpx;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: #333;
+  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 个人行动力网格 - 极简排版 */
+.action-status-grid {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20rpx; /* 再压缩，给迷你按钮留位 */
+  padding: 0 10rpx;
+  gap: 16rpx;
+}
+
+.status-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 45%;
+  position: relative;
+  padding-right: 180rpx;
+  min-height: 120rpx;
+}
+
+.step-status { padding-right: 170rpx; }
+.focus-status { padding-right: 190rpx; }
+
+.item-ctrl {
+  position: absolute;
+  right: 0rpx;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 180rpx;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.step-status .item-ctrl { width: 170rpx; }
+.focus-status .item-ctrl { width: 190rpx; }
+
+.item-ctrl .v-divider {
+  width: 0;
+  height: 56rpx;
+  border-right: 2rpx dashed #cccccc;
+  margin-left: 20rpx;
+}
+
+.inline-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20rpx;
+  margin: 10rpx 0 20rpx;
+  gap: 20rpx;
+}
+
+.mini-btn {
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  font-weight: 300;
+  border-radius: 6rpx;
+  letter-spacing: 2rpx;
+  border: 2rpx solid #111;
+  background: #fff;
+  color: #111;
+  padding: 0 16rpx;
+  white-space: nowrap;
+  min-width: 130rpx;
+}
+.mini-btn::after { border: none; }
+
+.mini-sync { }
+
+.mini-direction {
+  border: 2rpx solid #111;
+}
+
+.mini-btn[disabled] {
+  color: #aaa;
+  border-color: #ccc;
+  background: #f8f8f8;
+}
+.item-label {
+  font-size: 24rpx;
+  color: #999;
+  margin-bottom: 16rpx;
+  font-weight: 300;
+}
+
+.item-value {
+  font-size: 56rpx;
+  font-weight: 200;
+  color: #222;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.item-unit {
+  font-size: 20rpx;
+  color: #999;
+  margin-left: 8rpx;
+  font-weight: 300;
+}
+
+.item-hint {
+  font-size: 20rpx;
+  color: #ccc;
+  margin-top: 12rpx;
+  font-weight: 300;
+}
+
+.contribution-tip {
+  text-align: center;
+  font-size: 24rpx;
+  color: #888;
+  margin: 40rpx 0 10rpx;
+  font-weight: 300;
+  letter-spacing: 1rpx;
+}
+
+/* 规则与状态提示卡片 - 重新设计 */
+.rules-status-card {
+  background: #fdfdfd;
+  border: 1rpx solid #f0f0f0;
+  border-radius: 8rpx;
+  padding: 24rpx 30rpx;
+  margin: 30rpx 10rpx 40rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.rule-row {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.rule-dot {
+  width: 6rpx;
+  height: 6rpx;
+  border-radius: 50%;
+  background: #e0e0e0;
+}
+
+.rule-dot.status-ready {
+  background: #333;
+}
+
+.rule-dot.status-pending {
+  background: #f0f0f0;
+}
+
+.rule-content {
+  font-size: 24rpx;
+  color: #888;
+  font-weight: 300;
+  letter-spacing: 1rpx;
+}
+
+.rule-divider {
+  height: 1rpx;
+  background: #f5f5f5;
+  width: 100%;
+}
+
+/* 方向选择抽屉弹窗 */
+.direction-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  visibility: hidden;
+  transition: all 0.3s;
+}
+
+.direction-drawer.show {
+  visibility: visible;
+}
+
+.drawer-mask {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  opacity: 0.3;
-  z-index: 1;
+  background: rgba(0,0,0,0.4);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.direction-drawer.show .drawer-mask {
+  opacity: 1;
+}
+
+.drawer-content {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: #fff;
+  padding: 40rpx 40rpx calc(40rpx + env(safe-area-inset-bottom));
+  border-radius: 32rpx 32rpx 0 0;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+.direction-drawer.show .drawer-content {
+  transform: translateY(0);
+}
+
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40rpx;
+}
+
+.drawer-title {
+  font-size: 32rpx;
+  color: #333;
+  font-weight: 400;
+  letter-spacing: 2rpx;
+}
+
+.drawer-close {
+  font-size: 48rpx;
+  color: #999;
+  padding: 10rpx;
+  line-height: 1;
+}
+
+.next-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20rpx;
+  margin-bottom: 60rpx;
+}
+
+.next-chip {
+  padding: 20rpx 40rpx;
+  font-size: 26rpx;
+  color: #666;
+  background: #f9f9f9;
+  border-radius: 8rpx;
+  border: 1rpx solid #f0f0f0;
+  transition: all 0.2s;
+}
+
+.next-chip.active {
+  background: #333;
+  color: #fff;
+  border-color: #333;
+}
+
+.submit-direction-btn {
+  width: 100% !important;
+  height: 96rpx;
+  line-height: 96rpx;
+  background: #333;
+  color: #fff;
+  font-size: 28rpx;
+  font-weight: 300;
+  border-radius: 8rpx;
+  letter-spacing: 4rpx;
+}
+
+/* 底部操作按钮 - 悬浮简约 */
+.relay-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+  padding: 0 40rpx 12rpx;
+  position: relative;
+  z-index: 3;
+}
+
+.relay-btn {
+  width: 100% !important;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26rpx;
+  font-weight: 300;
+  border-radius: 4rpx;
+  letter-spacing: 2rpx;
+  background: #fff;
+  color: #333;
+  border: 1rpx solid #e0e0e0;
+}
+
+.relay-btn.sync-btn {
+  background: #333;
+  color: #fff;
+  border: none;
+}
+
+.relay-btn.upload-btn {
+  border: 1rpx solid #333;
+}
+
+/* 地图区域 - 呼吸感布局 */
+.map-section {
+  padding: 0 40rpx 80rpx;
+  position: relative;
+  z-index: 3;
+}
+
+.map-ctrl-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12rpx;
+}
+
+.map-title {
+  font-size: 24rpx;
+  color: #666;
+  font-weight: 300;
+}
+
+.map-subtitle {
+  font-size: 22rpx;
+  color: #999;
+  font-weight: 300;
+}
+
+.map-box {
+  width: 100%;
+  height: 640rpx; /* 稍微调高，更有视觉冲击力 */
+  border-radius: 8rpx;
+  box-shadow: 0 8rpx 30rpx rgba(0,0,0,0.05);
+}
+
+/* 兼容性修复 */
+button::after {
+  border: none;
 }

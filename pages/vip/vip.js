@@ -1,14 +1,12 @@
 // pages/vip/vip.js
 Page({
   data: {
-    selectedPlan: '', // 选中的套餐：monthly, quarterly, yearly
+    selectedPlan: '', // 选中的套餐：yearly
     selectedPrice: '', // 选中的价格
 
     // 套餐信息
     plans: {
-      monthly: { name: '月卡', price: '', value: 0, duration: 1 },
-      quarterly: { name: '季卡', price: '', value: 0, duration: 3 },
-      yearly: { name: '年卡', price: '', value: 0, duration: 12 }
+      yearly: { name: '夏天持有者', price: '', value: 0, duration: 12 }
     },
     activationCode: ''
   },
@@ -204,8 +202,8 @@ Page({
 
     // 确认开通弹窗
     wx.showModal({
-      title: '确认开通',
-      content: `确认开通${planInfo.name}会员吗？费用：${planInfo.price}`,
+      title: '确认成为夏天持有者',
+      content: `确认成为${planInfo.name}吗？费用：${planInfo.price}`,
       success: (res) => {
         if (res.confirm) {
           // 发起支付
@@ -340,25 +338,30 @@ Page({
         const list = res.result && res.result.data ? res.result.data : [];
         const map = { ...this.data.plans };
         list.forEach(doc => {
-          const pid = doc.planId;
-          let val = 0;
-          let priceStr = '';
-          if (typeof doc.priceCents === 'number') {
-            val = Number(doc.priceCents);
-            priceStr = '¥' + String(val);
-          } else if (typeof doc.priceYuan === 'number') {
-            val = Number(doc.priceYuan);
-            priceStr = '¥' + String(val);
-          } else if (typeof doc.price === 'number') {
-            val = Number(doc.price);
-            priceStr = '¥' + String(val);
-          } else if (typeof doc.displayPrice === 'string') {
-            priceStr = doc.displayPrice;
-          }
-          const name = doc.name || (pid === 'monthly' ? '月卡' : pid === 'quarterly' ? '季卡' : pid === 'yearly' ? '年卡' : '');
-          const duration = map[pid] && map[pid].duration ? map[pid].duration : 1;
-          if (pid) {
-            map[pid] = { name, price: priceStr, value: val, duration };
+          // 只处理年费套餐
+          if (doc.planId === 'yearly') {
+            const pid = doc.planId;
+            let val = 0;
+            let priceStr = '';
+            if (typeof doc.priceCents === 'number') {
+              // 将priceCents直接当作元处理
+              const yuanValue = Number(doc.priceCents);
+              val = Math.round(yuanValue * 100); // 转换为分用于后端处理
+              priceStr = '¥' + String(yuanValue.toFixed(2)); // 显示元单位
+            } else if (typeof doc.priceYuan === 'number') {
+              val = Number(doc.priceYuan);
+              priceStr = '¥' + String(val);
+            } else if (typeof doc.price === 'number') {
+              val = Number(doc.price);
+              priceStr = '¥' + String(val);
+            } else if (typeof doc.displayPrice === 'string') {
+              priceStr = doc.displayPrice;
+            }
+            const name = doc.name || '夏天持有者';
+            const duration = 12;
+            if (pid) {
+              map[pid] = { name, price: priceStr, value: val, duration };
+            }
           }
         });
         this.setData({ plans: map });
